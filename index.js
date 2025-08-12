@@ -10,6 +10,8 @@ import blogRoutes from './routes/blogRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import subscriberRoutes from './routes/subscriberRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import assessmentRoutes from './routes/assessmentRoutes.js';
+import adminAssessmentRoutes from './routes/adminAssessmentRoutes.js';
 
 // Import middleware
 import { verifyAdmin } from './middleware/authMiddleware.js';
@@ -70,6 +72,8 @@ app.use('/api/blog', blogRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/subscribers', subscriberRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/assessments', assessmentRoutes);
+app.use('/api/admin/assessments', adminAssessmentRoutes);
 
 // Health check endpoint
 app.get('/api/status', (req, res) => {
@@ -93,13 +97,17 @@ app.get('/', (req, res) => {
       blog: '/api/blog',
       contact: '/api/contact',
       subscribers: '/api/subscribers',
-      auth: '/api/auth'
+      auth: '/api/auth',
+      assessments: '/api/assessments',
+      adminAssessments: '/api/admin/assessments'
     },
     features: {
       blog: 'Complete blog management system with file uploads',
       contact: 'Contact form handling with email notifications',
       subscribers: 'Newsletter subscription management',
-      auth: 'Admin authentication with OTP'
+      auth: 'Admin authentication with OTP',
+      assessments: 'Dynamic assessment system with 200+ assessments',
+      adminAssessments: 'Assessment management and analytics'
     }
   });
 });
@@ -118,6 +126,8 @@ app.use('*', (req, res) => {
       '/api/contact', 
       '/api/subscribers',
       '/api/auth',
+      '/api/assessments',
+      '/api/admin/assessments',
       '/api/status'
     ]
   });
