@@ -588,7 +588,7 @@ class AssessmentService {
       const question = section.questions.find(q => q.id === answer.questionId);
       if (!question) continue;
 
-      const score = this.calculateQuestionScore(question, answer.value);
+            const score = this.calculateQuestionScore(question, answer.value);
       totalScore += score.score;
       maxPossibleScore += score.maxScore;
     }
