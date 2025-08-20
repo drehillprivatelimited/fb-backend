@@ -76,7 +76,7 @@ router.post('/:id/start', async (req, res) => {
   console.log(`POST /api/assessments/${req.params.id}/start - Starting assessment session`);
   try {
     const { id } = req.params;
-    const { userId } = req.body;
+    const { userId, userEmail } = req.body;
     const metadata = {
       userAgent: req.headers['user-agent'] || '',
       ipAddress: req.ip || req.connection.remoteAddress || '',
@@ -85,6 +85,18 @@ router.post('/:id/start', async (req, res) => {
     };
 
     const session = await assessmentService.startAssessmentSession(id, userId, metadata);
+    
+    // If user ID is provided, add the assessment session to user's record
+    if (userId) {
+      try {
+        const userService = (await import('../services/userService.js')).default;
+        await userService.addAssessmentSession(userId, session.sessionId);
+      } catch (userError) {
+        console.error('Error adding assessment session to user:', userError);
+        // Don't fail the assessment start if user update fails
+      }
+    }
+    
     res.status(201).json(session);
   } catch (error) {
     console.error('Error starting assessment session:', error);
@@ -106,7 +118,7 @@ router.post('/:id/submit', async (req, res) => {
   console.log(`POST /api/assessments/${req.params.id}/submit - Submitting assessment answers`);
   try {
     const { id } = req.params;
-    const { sessionId, answers } = req.body;
+    const { sessionId, answers, userId } = req.body;
 
     if (!sessionId || !answers) {
       return res.status(400).json({ 
@@ -115,6 +127,18 @@ router.post('/:id/submit', async (req, res) => {
     }
 
     const result = await assessmentService.submitAssessment(sessionId, answers);
+    
+    // If user ID is provided, mark the assessment as completed for the user
+    if (userId) {
+      try {
+        const userService = (await import('../services/userService.js')).default;
+        await userService.markAssessmentCompleted(userId);
+      } catch (userError) {
+        console.error('Error marking assessment as completed for user:', userError);
+        // Don't fail the assessment submission if user update fails
+      }
+    }
+    
     res.json(result);
   } catch (error) {
     console.error('Error submitting assessment:', error);
