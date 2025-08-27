@@ -265,47 +265,24 @@ class AssessmentService {
   // Get assessment results
   async getAssessmentResults(sessionId) {
     try {
-      console.log('=== GET ASSESSMENT RESULTS START ===');
-      console.log('Session ID:', sessionId);
-      
       const session = await AssessmentSession.findOne({ sessionId });
       
       if (!session) {
-        console.log('Session not found for ID:', sessionId);
         throw new Error('Session not found');
       }
 
-      console.log('Session found:', {
-        sessionId: session.sessionId,
-        status: session.status,
-        hasResults: !!session.results,
-        resultsKeys: session.results ? Object.keys(session.results) : []
-      });
-
       if (session.status !== 'completed') {
-        console.log('Session not completed, status:', session.status);
         throw new Error('Assessment not completed');
       }
 
-      const response = {
+      return {
         sessionId,
         assessmentId: session.assessmentId,
         results: session.results,
         duration: session.duration,
         completedAt: session.completedAt
       };
-
-      console.log('Returning results:', {
-        sessionId: response.sessionId,
-        assessmentId: response.assessmentId,
-        hasResults: !!response.results,
-        resultsKeys: response.results ? Object.keys(response.results) : []
-      });
-      console.log('=== GET ASSESSMENT RESULTS END ===');
-
-      return response;
     } catch (error) {
-      console.error('Error in getAssessmentResults:', error);
       throw new Error(`Error fetching results: ${error.message}`);
     }
   }
@@ -489,111 +466,237 @@ class AssessmentService {
         recommendationReason = 'Based on your current profile, other career paths might be a better fit for your interests and skills.';
       }
 
-      // Generate skill gaps
-      const skillGaps = [
-        { 
-          skill: 'Technical Fundamentals', 
-          currentLevel: technicalScores.overall || 0, 
-          requiredLevel: 70, 
-          priority: 'high' 
-        },
-        { 
-          skill: 'Problem Solving', 
-          currentLevel: technicalScores.categories.logicalReasoning || 0, 
-          requiredLevel: 75, 
-          priority: 'medium' 
-        },
-        { 
-          skill: 'Domain Knowledge', 
-          currentLevel: technicalScores.categories.domainKnowledge || 0, 
-          requiredLevel: 60, 
-          priority: 'high' 
-        }
-      ];
+      // Generate skill gaps based on actual scores
+      const skillGaps = [];
+      
+      // Technical skill gaps based on actual technical scores
+      if (technicalScores.overall < 70) {
+        skillGaps.push({
+          skill: 'Technical Fundamentals',
+          currentLevel: technicalScores.overall,
+          requiredLevel: 70,
+          priority: 'high'
+        });
+      }
+      
+      if (technicalScores.categories.logicalReasoning < 75) {
+        skillGaps.push({
+          skill: 'Problem Solving',
+          currentLevel: technicalScores.categories.logicalReasoning,
+          requiredLevel: 75,
+          priority: 'medium'
+        });
+      }
+      
+      if (technicalScores.categories.domainKnowledge < 60) {
+        skillGaps.push({
+          skill: 'Domain Knowledge',
+          currentLevel: technicalScores.categories.domainKnowledge,
+          requiredLevel: 60,
+          priority: 'high'
+        });
+      }
+      
+      if (technicalScores.categories.numeracy < 65) {
+        skillGaps.push({
+          skill: 'Numerical Skills',
+          currentLevel: technicalScores.categories.numeracy,
+          requiredLevel: 65,
+          priority: 'medium'
+        });
+      }
+      
+      // Psychometric skill gaps
+      if (psychometricScores.categories.cognitive < 70) {
+        skillGaps.push({
+          skill: 'Cognitive Abilities',
+          currentLevel: psychometricScores.categories.cognitive,
+          requiredLevel: 70,
+          priority: 'high'
+        });
+      }
+      
+      if (psychometricScores.categories.motivation < 65) {
+        skillGaps.push({
+          skill: 'Motivation & Drive',
+          currentLevel: psychometricScores.categories.motivation,
+          requiredLevel: 65,
+          priority: 'medium'
+        });
+      }
 
-      // Generate career matches
-      const careerMatches = [
-        {
+      // Generate career matches based on actual scores
+      const careerMatches = [];
+      
+      // Platform Developer - based on technical scores
+      const developerScore = Math.max(technicalScores.overall, 70);
+      if (developerScore >= 60) {
+        careerMatches.push({
           title: 'Platform Developer',
           description: 'Build custom applications and workflows',
-          matchScore: Math.max(technicalScores.overall || 0, 70),
+          matchScore: developerScore,
           salary: '$85,000 - $120,000',
-          demand: 'high',
+          demand: developerScore >= 80 ? 'high' : 'medium',
           requirements: ['Programming', 'System Design', 'Problem Solving']
-        },
-        {
+        });
+      }
+      
+      // Platform Administrator - based on domain knowledge
+      const adminScore = Math.max(technicalScores.categories.domainKnowledge, 75);
+      if (adminScore >= 60) {
+        careerMatches.push({
           title: 'Platform Administrator',
           description: 'Manage platform configuration and users',
-          matchScore: Math.max(technicalScores.categories.domainKnowledge || 0, 75),
+          matchScore: adminScore,
           salary: '$70,000 - $95,000',
-          demand: 'high',
+          demand: adminScore >= 80 ? 'high' : 'medium',
           requirements: ['System Administration', 'User Management', 'Process Design']
-        },
-        {
+        });
+      }
+      
+      // Business Analyst - based on cognitive and communication skills
+      const analystScore = Math.max(psychometricScores.categories.cognitive, 65);
+      if (analystScore >= 60) {
+        careerMatches.push({
           title: 'Business Analyst',
           description: 'Bridge business needs with technical solutions',
-          matchScore: Math.max(psychometricScores.categories.cognitive || 0, 65),
+          matchScore: analystScore,
           salary: '$65,000 - $90,000',
-          demand: 'medium',
+          demand: analystScore >= 75 ? 'high' : 'medium',
           requirements: ['Requirements Analysis', 'Communication', 'Process Mapping']
-        }
-      ];
+        });
+      }
+      
+      // Technical Consultant - based on overall technical and psychometric scores
+      const consultantScore = Math.round((technicalScores.overall + psychometricScores.overall) / 2);
+      if (consultantScore >= 65) {
+        careerMatches.push({
+          title: 'Technical Consultant',
+          description: 'Provide expert technical guidance and solutions',
+          matchScore: consultantScore,
+          salary: '$90,000 - $130,000',
+          demand: consultantScore >= 80 ? 'high' : 'medium',
+          requirements: ['Technical Expertise', 'Communication', 'Problem Solving']
+        });
+      }
 
-      // Generate learning path
-      const learningPath = [
-        {
-          stage: 'Foundation',
-          duration: '2-4 weeks',
-          modules: ['Platform Basics', 'Navigation', 'Core Concepts'],
-          effort: 'low',
-          completed: false
-        },
-        {
+      // Generate learning path based on actual skill gaps
+      const learningPath = [];
+      
+      // Foundation stage - always included
+      learningPath.push({
+        stage: 'Foundation',
+        duration: '2-4 weeks',
+        modules: ['Platform Basics', 'Navigation', 'Core Concepts'],
+        effort: 'low',
+        completed: false
+      });
+      
+      // Intermediate stage - if technical score is moderate
+      if (technicalScores.overall >= 40) {
+        learningPath.push({
           stage: 'Intermediate',
           duration: '6-8 weeks',
           modules: ['Scripting Basics', 'Workflow Design', 'Configuration'],
           effort: 'medium',
           completed: false
-        },
-        {
+        });
+      }
+      
+      // Advanced stage - if technical score is good
+      if (technicalScores.overall >= 60) {
+        learningPath.push({
           stage: 'Advanced',
           duration: '8-12 weeks',
           modules: ['Custom Development', 'Integration', 'Performance'],
           effort: 'high',
           completed: false
-        },
-        {
+        });
+      }
+      
+      // Certification stage - if overall score is good
+      if (overallScore >= 65) {
+        learningPath.push({
           stage: 'Certification',
           duration: '4-6 weeks',
           modules: ['Exam Prep', 'Practice Projects', 'Portfolio'],
           effort: 'medium',
           completed: false
-        }
-      ];
+        });
+      }
 
-      // Generate improvement areas
-      const improvementAreas = [
-        {
+      // Generate improvement areas based on actual low scores
+      const improvementAreas = [];
+      
+      // Technical skills improvement
+      if (technicalScores.overall < 80) {
+        improvementAreas.push({
           area: 'Technical Skills',
-          currentScore: technicalScores.overall || 0,
+          currentScore: technicalScores.overall,
           targetScore: 80,
-          tips: ['Practice coding exercises daily', 'Take online courses', 'Build small projects'],
-          resources: ['FreeCodeCamp', 'Codecademy', 'YouTube tutorials']
-        },
-        {
+          tips: [
+            'Practice coding exercises daily',
+            'Take online courses in relevant technologies',
+            'Build small projects to apply knowledge',
+            'Join technical communities and forums'
+          ],
+          resources: ['FreeCodeCamp', 'Codecademy', 'YouTube tutorials', 'GitHub projects']
+        });
+      }
+      
+      // Domain knowledge improvement
+      if (technicalScores.categories.domainKnowledge < 75) {
+        improvementAreas.push({
           area: 'Domain Knowledge',
-          currentScore: technicalScores.categories.domainKnowledge || 0,
+          currentScore: technicalScores.categories.domainKnowledge,
           targetScore: 75,
-          tips: ['Read industry blogs', 'Join professional communities', 'Attend webinars'],
-          resources: ['Official documentation', 'Community forums', 'Industry conferences']
-        }
-      ];
+          tips: [
+            'Read industry blogs and documentation',
+            'Join professional communities',
+            'Attend webinars and conferences',
+            'Follow thought leaders in the field'
+          ],
+          resources: ['Official documentation', 'Community forums', 'Industry conferences', 'Professional blogs']
+        });
+      }
+      
+      // Problem solving improvement
+      if (technicalScores.categories.logicalReasoning < 75) {
+        improvementAreas.push({
+          area: 'Problem Solving',
+          currentScore: technicalScores.categories.logicalReasoning,
+          targetScore: 75,
+          tips: [
+            'Practice algorithmic problems',
+            'Work on logic puzzles and brain teasers',
+            'Break down complex problems into smaller parts',
+            'Learn different problem-solving frameworks'
+          ],
+          resources: ['LeetCode', 'HackerRank', 'Logic puzzles', 'Problem-solving books']
+        });
+      }
+      
+      // Cognitive abilities improvement
+      if (psychometricScores.categories.cognitive < 70) {
+        improvementAreas.push({
+          area: 'Cognitive Abilities',
+          currentScore: psychometricScores.categories.cognitive,
+          targetScore: 70,
+          tips: [
+            'Practice analytical thinking exercises',
+            'Read complex technical materials',
+            'Engage in strategic games and puzzles',
+            'Take courses in critical thinking'
+          ],
+          resources: ['Analytical thinking courses', 'Strategic games', 'Critical thinking books', 'Logic courses']
+        });
+      }
 
       // Universal results format
       const finalResults = {
         assessmentTitle: assessment.title,
         overallScore,
-        confidenceScore: Math.min(95, Math.max(70, overallScore + Math.random() * 10)),
+        confidenceScore: this.calculateConfidenceScore(psychometricScores, technicalScores, wiscarScores),
         recommendation,
         recommendationReason,
         psychometric: psychometricScores,
@@ -985,6 +1088,33 @@ class AssessmentService {
     return maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
   }
 
+  // Calculate confidence score based on performance consistency
+  calculateConfidenceScore(psychometricScores, technicalScores, wiscarScores) {
+    const scores = [
+      psychometricScores.overall || 0,
+      technicalScores.overall || 0,
+      wiscarScores.overall || 0
+    ];
+    
+    const overallScore = Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+    
+    // Calculate consistency (how close the scores are to each other)
+    const variance = scores.reduce((sum, score) => sum + Math.pow(score - overallScore, 2), 0) / scores.length;
+    const consistency = Math.max(0, 100 - Math.sqrt(variance));
+    
+    // Base confidence on overall score with consistency adjustment
+    let baseConfidence = 60;
+    if (overallScore >= 80) baseConfidence = 95;
+    else if (overallScore >= 70) baseConfidence = 85;
+    else if (overallScore >= 60) baseConfidence = 75;
+    else if (overallScore >= 40) baseConfidence = 65;
+    
+    // Adjust confidence based on consistency
+    const adjustedConfidence = Math.round((baseConfidence + consistency) / 2);
+    
+    return Math.min(95, Math.max(60, adjustedConfidence));
+  }
+
   // Calculate overall score
   calculateOverallScore(sectionScores, wiscarScores) {
     const totalSections = sectionScores.length;
@@ -1106,7 +1236,6 @@ class AssessmentService {
         return ['Review your detailed results', 'Consider your options', 'Plan your next steps'];
     }
   }
-
 
 }
 
