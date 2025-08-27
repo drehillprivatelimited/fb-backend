@@ -219,30 +219,8 @@ const assessmentSessionSchema = new mongoose.Schema({
   },
   answers: [answerSchema],
   results: {
-    overallScore: {
-      type: Number,
-      required: false
-    },
-    recommendation: {
-      type: String,
-      enum: ['yes', 'maybe', 'no'],
-      required: false
-    },
-    confidence: {
-      type: Number,
-      required: false
-    },
-    reason: {
-      type: String,
-      required: false
-    },
-    sectionScores: [sectionScoreSchema],
-    wiscarScores: wiscarScoresSchema,
-    careerPaths: [careerPathSchema],
-    recommendations: [recommendationSchema],
-    strengths: [String],
-    improvements: [String],
-    nextSteps: [String]
+    type: mongoose.Schema.Types.Mixed, // Allow flexible results structure for universal format
+    required: false
   },
   metadata: {
     userAgent: String,

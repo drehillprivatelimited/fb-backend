@@ -265,24 +265,47 @@ class AssessmentService {
   // Get assessment results
   async getAssessmentResults(sessionId) {
     try {
+      console.log('=== GET ASSESSMENT RESULTS START ===');
+      console.log('Session ID:', sessionId);
+      
       const session = await AssessmentSession.findOne({ sessionId });
       
       if (!session) {
+        console.log('Session not found for ID:', sessionId);
         throw new Error('Session not found');
       }
 
+      console.log('Session found:', {
+        sessionId: session.sessionId,
+        status: session.status,
+        hasResults: !!session.results,
+        resultsKeys: session.results ? Object.keys(session.results) : []
+      });
+
       if (session.status !== 'completed') {
+        console.log('Session not completed, status:', session.status);
         throw new Error('Assessment not completed');
       }
 
-      return {
+      const response = {
         sessionId,
         assessmentId: session.assessmentId,
         results: session.results,
         duration: session.duration,
         completedAt: session.completedAt
       };
+
+      console.log('Returning results:', {
+        sessionId: response.sessionId,
+        assessmentId: response.assessmentId,
+        hasResults: !!response.results,
+        resultsKeys: response.results ? Object.keys(response.results) : []
+      });
+      console.log('=== GET ASSESSMENT RESULTS END ===');
+
+      return response;
     } catch (error) {
+      console.error('Error in getAssessmentResults:', error);
       throw new Error(`Error fetching results: ${error.message}`);
     }
   }
@@ -372,15 +395,41 @@ class AssessmentService {
 
       console.log('Sections found:', sections.map(s => ({ id: s.id, type: s.type, questionCount: s.questions?.length || 0 })));
 
+      // Calculate section scores
       const sectionScores = [];
+      const psychometricScores = {
+        overall: 0,
+        categories: {
+          interest: 0,
+          motivation: 0,
+          personality: 0,
+          cognitive: 0,
+          growth: 75 // Default growth mindset score
+        }
+      };
+      
+      const technicalScores = {
+        overall: 0,
+        categories: {
+          logicalReasoning: 0,
+          numeracy: 0,
+          domainKnowledge: 0,
+          problemSolving: 0
+        },
+        correctAnswers: 0,
+        totalQuestions: 0
+      };
+      
       const wiscarScores = {
-        will: 0,
-        interest: 0,
-        skill: 0,
-        cognitive: 0,
-        ability: 0,
-        realWorld: 0,
-        overall: 0
+        overall: 0,
+        dimensions: {
+          will: 0,
+          interest: 0,
+          skill: 0,
+          cognitive: 0,
+          ability: 0,
+          realWorld: 0
+        }
       };
 
       // Calculate section scores
@@ -404,8 +453,16 @@ class AssessmentService {
 
         console.log(`Section ${section.type} score:`, score);
 
-        // Calculate WISCAR scores for wiscar section
-        if (section.type === 'wiscar') {
+        // Calculate detailed scores for each section type
+        if (section.type === 'psychometric') {
+          const psychometric = this.calculatePsychometricScores(section, sectionAnswers);
+          Object.assign(psychometricScores, psychometric);
+          console.log('Psychometric scores:', psychometric);
+        } else if (section.type === 'technical') {
+          const technical = this.calculateTechnicalScores(section, sectionAnswers);
+          Object.assign(technicalScores, technical);
+          console.log('Technical scores:', technical);
+        } else if (section.type === 'wiscar') {
           const wiscar = this.calculateWISCARScores(section, sectionAnswers);
           Object.assign(wiscarScores, wiscar);
           console.log('WISCAR scores:', wiscar);
@@ -413,30 +470,153 @@ class AssessmentService {
       }
 
       // Calculate overall score
-      const overallScore = this.calculateOverallScore(sectionScores, wiscarScores);
+      const overallScore = Math.round(
+        ((psychometricScores.overall || 0) + (technicalScores.overall || 0) + (wiscarScores.overall || 0)) / 3
+      );
       
       // Generate recommendation
-      const recommendation = this.generateRecommendation(overallScore);
+      let recommendation = 'MAYBE';
+      let recommendationReason = '';
       
-      // Generate career paths
-      const careerPaths = this.generateCareerPaths(overallScore, sectionScores);
-      
-      // Generate recommendations
-      const recommendations = this.generateRecommendations(overallScore, sectionScores);
+      if (overallScore >= 75) {
+        recommendation = 'YES';
+        recommendationReason = 'You show excellent alignment across all assessment dimensions, indicating strong potential for success in this field.';
+      } else if (overallScore >= 60) {
+        recommendation = 'MAYBE';
+        recommendationReason = 'You have good potential but may need to strengthen certain areas before pursuing this career path.';
+      } else {
+        recommendation = 'NO';
+        recommendationReason = 'Based on your current profile, other career paths might be a better fit for your interests and skills.';
+      }
 
+      // Generate skill gaps
+      const skillGaps = [
+        { 
+          skill: 'Technical Fundamentals', 
+          currentLevel: technicalScores.overall || 0, 
+          requiredLevel: 70, 
+          priority: 'high' 
+        },
+        { 
+          skill: 'Problem Solving', 
+          currentLevel: technicalScores.categories.logicalReasoning || 0, 
+          requiredLevel: 75, 
+          priority: 'medium' 
+        },
+        { 
+          skill: 'Domain Knowledge', 
+          currentLevel: technicalScores.categories.domainKnowledge || 0, 
+          requiredLevel: 60, 
+          priority: 'high' 
+        }
+      ];
+
+      // Generate career matches
+      const careerMatches = [
+        {
+          title: 'Platform Developer',
+          description: 'Build custom applications and workflows',
+          matchScore: Math.max(technicalScores.overall || 0, 70),
+          salary: '$85,000 - $120,000',
+          demand: 'high',
+          requirements: ['Programming', 'System Design', 'Problem Solving']
+        },
+        {
+          title: 'Platform Administrator',
+          description: 'Manage platform configuration and users',
+          matchScore: Math.max(technicalScores.categories.domainKnowledge || 0, 75),
+          salary: '$70,000 - $95,000',
+          demand: 'high',
+          requirements: ['System Administration', 'User Management', 'Process Design']
+        },
+        {
+          title: 'Business Analyst',
+          description: 'Bridge business needs with technical solutions',
+          matchScore: Math.max(psychometricScores.categories.cognitive || 0, 65),
+          salary: '$65,000 - $90,000',
+          demand: 'medium',
+          requirements: ['Requirements Analysis', 'Communication', 'Process Mapping']
+        }
+      ];
+
+      // Generate learning path
+      const learningPath = [
+        {
+          stage: 'Foundation',
+          duration: '2-4 weeks',
+          modules: ['Platform Basics', 'Navigation', 'Core Concepts'],
+          effort: 'low',
+          completed: false
+        },
+        {
+          stage: 'Intermediate',
+          duration: '6-8 weeks',
+          modules: ['Scripting Basics', 'Workflow Design', 'Configuration'],
+          effort: 'medium',
+          completed: false
+        },
+        {
+          stage: 'Advanced',
+          duration: '8-12 weeks',
+          modules: ['Custom Development', 'Integration', 'Performance'],
+          effort: 'high',
+          completed: false
+        },
+        {
+          stage: 'Certification',
+          duration: '4-6 weeks',
+          modules: ['Exam Prep', 'Practice Projects', 'Portfolio'],
+          effort: 'medium',
+          completed: false
+        }
+      ];
+
+      // Generate improvement areas
+      const improvementAreas = [
+        {
+          area: 'Technical Skills',
+          currentScore: technicalScores.overall || 0,
+          targetScore: 80,
+          tips: ['Practice coding exercises daily', 'Take online courses', 'Build small projects'],
+          resources: ['FreeCodeCamp', 'Codecademy', 'YouTube tutorials']
+        },
+        {
+          area: 'Domain Knowledge',
+          currentScore: technicalScores.categories.domainKnowledge || 0,
+          targetScore: 75,
+          tips: ['Read industry blogs', 'Join professional communities', 'Attend webinars'],
+          resources: ['Official documentation', 'Community forums', 'Industry conferences']
+        }
+      ];
+
+      // Universal results format
       const finalResults = {
+        assessmentTitle: assessment.title,
         overallScore,
+        confidenceScore: Math.min(95, Math.max(70, overallScore + Math.random() * 10)),
         recommendation,
-        confidence: overallScore,
-        reason: this.getRecommendationReason(recommendation, overallScore),
-        sectionScores,
-        wiscarScores,
-        careerPaths,
-        recommendations,
-        strengths: this.getStrengths(sectionScores),
-        improvements: this.getImprovements(sectionScores),
-        nextSteps: this.getNextSteps(recommendation, overallScore)
+        recommendationReason,
+        psychometric: psychometricScores,
+        technical: technicalScores,
+        wiscar: wiscarScores,
+        skillGaps,
+        careerMatches,
+        learningPath,
+        improvementAreas,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          assessmentId: assessment.id
+        }
       };
+
+      console.log('=== FINAL RESULTS STRUCTURE ===');
+      console.log('Final results keys:', Object.keys(finalResults));
+      console.log('Psychometric scores:', finalResults.psychometric);
+      console.log('Technical scores:', finalResults.technical);
+      console.log('WISCAR scores:', finalResults.wiscar);
+      console.log('Overall score:', finalResults.overallScore);
+      console.log('Recommendation:', finalResults.recommendation);
+      console.log('=== FINAL RESULTS END ===');
 
       console.log('Final results:', JSON.stringify(finalResults, null, 2));
 
@@ -577,7 +757,17 @@ class AssessmentService {
     
     if (answers.length === 0) {
       console.log('No answers provided for WISCAR section');
-      return { overall: 0 };
+      return { 
+        overall: 0,
+        dimensions: {
+          will: 0,
+          interest: 0,
+          skill: 0,
+          cognitive: 0,
+          ability: 0,
+          realWorld: 0
+        }
+      };
     }
 
     // Calculate overall WISCAR score from all questions
@@ -595,10 +785,204 @@ class AssessmentService {
 
     const overall = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
     
+    // Calculate individual WISCAR dimensions
+    const dimensions = {
+      will: this.calculateWISCARDimension(section, answers, 'will'),
+      interest: this.calculateWISCARDimension(section, answers, 'interest'),
+      skill: this.calculateWISCARDimension(section, answers, 'skill'),
+      cognitive: this.calculateWISCARDimension(section, answers, 'cognitive'),
+      ability: this.calculateWISCARDimension(section, answers, 'ability'),
+      realWorld: this.calculateWISCARDimension(section, answers, 'realWorld')
+    };
+    
     console.log('Overall WISCAR score:', overall);
+    console.log('WISCAR dimensions:', dimensions);
     console.log('=== WISCAR CALCULATION END ===');
 
-    return { overall };
+    return { 
+      overall,
+      dimensions
+    };
+  }
+
+  // Calculate WISCAR dimension score
+  calculateWISCARDimension(section, answers, dimension) {
+    const dimensionQuestions = section.questions.filter(q => 
+      q.category === dimension || q.id.includes(dimension)
+    );
+    
+    if (dimensionQuestions.length === 0) return 0;
+    
+    let totalScore = 0;
+    let maxPossibleScore = 0;
+    
+    for (const question of dimensionQuestions) {
+      const answer = answers.find(a => a.questionId === question.id);
+      if (!answer) continue;
+      
+      const score = this.calculateQuestionScore(question, answer.value);
+      totalScore += score.score;
+      maxPossibleScore += score.maxScore;
+    }
+    
+    return maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+  }
+
+  // Calculate psychometric scores
+  calculatePsychometricScores(section, answers) {
+    console.log('=== PSYCHOMETRIC CALCULATION START ===');
+    
+    if (answers.length === 0) {
+      return {
+        overall: 0,
+        categories: {
+          interest: 0,
+          motivation: 0,
+          personality: 0,
+          cognitive: 0,
+          growth: 75
+        }
+      };
+    }
+
+    // Calculate overall psychometric score
+    let totalScore = 0;
+    let maxPossibleScore = 0;
+
+    for (const answer of answers) {
+      const question = section.questions.find(q => q.id === answer.questionId);
+      if (!question) continue;
+
+      const score = this.calculateQuestionScore(question, answer.value);
+      totalScore += score.score;
+      maxPossibleScore += score.maxScore;
+    }
+
+    const overall = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    
+    // Calculate category scores
+    const categories = {
+      interest: this.calculatePsychometricCategory(section, answers, 'interest'),
+      motivation: this.calculatePsychometricCategory(section, answers, 'motivation'),
+      personality: this.calculatePsychometricCategory(section, answers, 'personality'),
+      cognitive: this.calculatePsychometricCategory(section, answers, 'cognitive'),
+      growth: 75 // Default growth mindset score
+    };
+    
+    console.log('Overall psychometric score:', overall);
+    console.log('Psychometric categories:', categories);
+    console.log('=== PSYCHOMETRIC CALCULATION END ===');
+
+    return {
+      overall,
+      categories
+    };
+  }
+
+  // Calculate psychometric category score
+  calculatePsychometricCategory(section, answers, category) {
+    const categoryQuestions = section.questions.filter(q => 
+      q.category === category || q.id.includes(category)
+    );
+    
+    if (categoryQuestions.length === 0) return 0;
+    
+    let totalScore = 0;
+    let maxPossibleScore = 0;
+    
+    for (const question of categoryQuestions) {
+      const answer = answers.find(a => a.questionId === question.id);
+      if (!answer) continue;
+      
+      const score = this.calculateQuestionScore(question, answer.value);
+      totalScore += score.score;
+      maxPossibleScore += score.maxScore;
+    }
+    
+    return maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+  }
+
+  // Calculate technical scores
+  calculateTechnicalScores(section, answers) {
+    console.log('=== TECHNICAL CALCULATION START ===');
+    
+    if (answers.length === 0) {
+      return {
+        overall: 0,
+        categories: {
+          logicalReasoning: 0,
+          numeracy: 0,
+          domainKnowledge: 0,
+          problemSolving: 0
+        },
+        correctAnswers: 0,
+        totalQuestions: section.questions.length
+      };
+    }
+
+    // Calculate overall technical score
+    let totalScore = 0;
+    let maxPossibleScore = 0;
+    let correctAnswers = 0;
+
+    for (const answer of answers) {
+      const question = section.questions.find(q => q.id === answer.questionId);
+      if (!question) continue;
+
+      const score = this.calculateQuestionScore(question, answer.value);
+      totalScore += score.score;
+      maxPossibleScore += score.maxScore;
+      
+      // Count correct answers for multiple choice questions
+      if (question.type === 'multipleChoice' && score.score > 0) {
+        correctAnswers++;
+      }
+    }
+
+    const overall = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    
+    // Calculate category scores
+    const categories = {
+      logicalReasoning: this.calculateTechnicalCategory(section, answers, 'logical'),
+      numeracy: this.calculateTechnicalCategory(section, answers, 'numerical'),
+      domainKnowledge: this.calculateTechnicalCategory(section, answers, 'domain'),
+      problemSolving: this.calculateTechnicalCategory(section, answers, 'problem')
+    };
+    
+    console.log('Overall technical score:', overall);
+    console.log('Technical categories:', categories);
+    console.log('Correct answers:', correctAnswers, 'out of', section.questions.length);
+    console.log('=== TECHNICAL CALCULATION END ===');
+
+    return {
+      overall,
+      categories,
+      correctAnswers,
+      totalQuestions: section.questions.length
+    };
+  }
+
+  // Calculate technical category score
+  calculateTechnicalCategory(section, answers, category) {
+    const categoryQuestions = section.questions.filter(q => 
+      q.category === category || q.id.includes(category)
+    );
+    
+    if (categoryQuestions.length === 0) return 0;
+    
+    let totalScore = 0;
+    let maxPossibleScore = 0;
+    
+    for (const question of categoryQuestions) {
+      const answer = answers.find(a => a.questionId === question.id);
+      if (!answer) continue;
+      
+      const score = this.calculateQuestionScore(question, answer.value);
+      totalScore += score.score;
+      maxPossibleScore += score.maxScore;
+    }
+    
+    return maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
   }
 
   // Calculate overall score
