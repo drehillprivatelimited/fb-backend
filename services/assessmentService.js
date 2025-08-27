@@ -418,6 +418,7 @@ class AssessmentService {
         );
 
         console.log(`Section ${section.type}: Found ${sectionAnswers.length} answers out of ${section.questions?.length || 0} questions`);
+        console.log(`Section ${section.type} questions:`, section.questions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
 
         const score = this.calculateSectionScore(section, sectionAnswers);
         sectionScores.push({
@@ -910,11 +911,31 @@ class AssessmentService {
 
   // Calculate WISCAR dimension score
   calculateWISCARDimension(section, answers, dimension) {
+    // Map expected dimensions to actual question categories
+    const dimensionMapping = {
+      'will': ['will', 'motivation', 'perseverance', 'drive'],
+      'interest': ['interest', 'curiosity', 'engagement'],
+      'skill': ['skill', 'ability', 'competence', 'proficiency'],
+      'cognitive': ['cognitive', 'thinking', 'mental', 'intellectual'],
+      'ability': ['ability', 'capability', 'potential', 'aptitude'],
+      'realWorld': ['real-world', 'practical', 'application', 'alignment']
+    };
+    
+    const targetCategories = dimensionMapping[dimension] || [dimension];
+    
     const dimensionQuestions = section.questions.filter(q => 
-      q.category === dimension || q.id.includes(dimension)
+      targetCategories.some(target => 
+        q.category === target || 
+        q.subcategory === target || 
+        q.id.includes(target)
+      )
     );
     
-    if (dimensionQuestions.length === 0) return 0;
+    if (dimensionQuestions.length === 0) {
+      console.log(`No questions found for WISCAR dimension: ${dimension}`);
+      console.log('Available categories:', [...new Set(section.questions.map(q => q.category))]);
+      return 0;
+    }
     
     let totalScore = 0;
     let maxPossibleScore = 0;
@@ -928,7 +949,10 @@ class AssessmentService {
       maxPossibleScore += score.maxScore;
     }
     
-    return maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    console.log(`WISCAR dimension ${dimension}: ${result}% (${dimensionQuestions.length} questions)`);
+    
+    return result;
   }
 
   // Calculate psychometric scores
@@ -984,11 +1008,29 @@ class AssessmentService {
 
   // Calculate psychometric category score
   calculatePsychometricCategory(section, answers, category) {
+    // Map expected categories to actual question categories
+    const categoryMapping = {
+      'interest': ['interest', 'learning-style', 'motivation'],
+      'motivation': ['motivation', 'will', 'drive'],
+      'personality': ['personality', 'traits', 'character'],
+      'cognitive': ['cognitive', 'thinking', 'mental', 'logical-thinking']
+    };
+    
+    const targetCategories = categoryMapping[category] || [category];
+    
     const categoryQuestions = section.questions.filter(q => 
-      q.category === category || q.id.includes(category)
+      targetCategories.some(target => 
+        q.category === target || 
+        q.subcategory === target || 
+        q.id.includes(target)
+      )
     );
     
-    if (categoryQuestions.length === 0) return 0;
+    if (categoryQuestions.length === 0) {
+      console.log(`No questions found for psychometric category: ${category}`);
+      console.log('Available categories:', [...new Set(section.questions.map(q => q.category))]);
+      return 0;
+    }
     
     let totalScore = 0;
     let maxPossibleScore = 0;
@@ -1002,7 +1044,10 @@ class AssessmentService {
       maxPossibleScore += score.maxScore;
     }
     
-    return maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    console.log(`Psychometric category ${category}: ${result}% (${categoryQuestions.length} questions)`);
+    
+    return result;
   }
 
   // Calculate technical scores
@@ -1067,11 +1112,29 @@ class AssessmentService {
 
   // Calculate technical category score
   calculateTechnicalCategory(section, answers, category) {
+    // Map expected categories to actual question categories
+    const categoryMapping = {
+      'logical': ['logical-thinking', 'logical', 'reasoning', 'problem-solving'],
+      'numerical': ['numerical', 'math', 'mathematics', 'calculation'],
+      'domain': ['programming-concepts', 'domain', 'knowledge', 'awareness'],
+      'problem': ['problem-solving', 'problem', 'solving', 'logical-thinking']
+    };
+    
+    const targetCategories = categoryMapping[category] || [category];
+    
     const categoryQuestions = section.questions.filter(q => 
-      q.category === category || q.id.includes(category)
+      targetCategories.some(target => 
+        q.category === target || 
+        q.subcategory === target || 
+        q.id.includes(target)
+      )
     );
     
-    if (categoryQuestions.length === 0) return 0;
+    if (categoryQuestions.length === 0) {
+      console.log(`No questions found for technical category: ${category}`);
+      console.log('Available categories:', [...new Set(section.questions.map(q => q.category))]);
+      return 0;
+    }
     
     let totalScore = 0;
     let maxPossibleScore = 0;
@@ -1085,7 +1148,10 @@ class AssessmentService {
       maxPossibleScore += score.maxScore;
     }
     
-    return maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+    console.log(`Technical category ${category}: ${result}% (${categoryQuestions.length} questions)`);
+    
+    return result;
   }
 
   // Calculate confidence score based on performance consistency
