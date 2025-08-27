@@ -785,6 +785,7 @@ class AssessmentService {
     
     switch (question.type) {
       case 'multiple-choice':
+      case 'multipleChoice':
         const option = question.options.find(opt => opt.value === answerValue);
         const score = option ? (option.score || option.value || 0) : 0;
         const maxScore = Math.max(...question.options.map(opt => opt.score || opt.value || 0));
@@ -923,6 +924,10 @@ class AssessmentService {
     
     const targetCategories = dimensionMapping[dimension] || [dimension];
     
+    console.log(`Looking for WISCAR dimension: ${dimension}`);
+    console.log(`Target categories:`, targetCategories);
+    console.log(`Available question categories:`, [...new Set(section.questions.map(q => q.category))]);
+    
     const dimensionQuestions = section.questions.filter(q => 
       targetCategories.some(target => 
         q.category === target || 
@@ -930,6 +935,8 @@ class AssessmentService {
         q.id.includes(target)
       )
     );
+    
+    console.log(`Found ${dimensionQuestions.length} questions for dimension ${dimension}:`, dimensionQuestions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
     
     if (dimensionQuestions.length === 0) {
       console.log(`No questions found for WISCAR dimension: ${dimension}`);
@@ -942,15 +949,19 @@ class AssessmentService {
     
     for (const question of dimensionQuestions) {
       const answer = answers.find(a => a.questionId === question.id);
-      if (!answer) continue;
+      if (!answer) {
+        console.log(`No answer found for question ${question.id}`);
+        continue;
+      }
       
       const score = this.calculateQuestionScore(question, answer.value);
+      console.log(`Question ${question.id} score: ${score.score}/${score.maxScore}`);
       totalScore += score.score;
       maxPossibleScore += score.maxScore;
     }
     
     const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
-    console.log(`WISCAR dimension ${dimension}: ${result}% (${dimensionQuestions.length} questions)`);
+    console.log(`WISCAR dimension ${dimension}: ${result}% (${dimensionQuestions.length} questions, total: ${totalScore}/${maxPossibleScore})`);
     
     return result;
   }
@@ -1018,6 +1029,10 @@ class AssessmentService {
     
     const targetCategories = categoryMapping[category] || [category];
     
+    console.log(`Looking for psychometric category: ${category}`);
+    console.log(`Target categories:`, targetCategories);
+    console.log(`Available question categories:`, [...new Set(section.questions.map(q => q.category))]);
+    
     const categoryQuestions = section.questions.filter(q => 
       targetCategories.some(target => 
         q.category === target || 
@@ -1025,6 +1040,8 @@ class AssessmentService {
         q.id.includes(target)
       )
     );
+    
+    console.log(`Found ${categoryQuestions.length} questions for category ${category}:`, categoryQuestions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
     
     if (categoryQuestions.length === 0) {
       console.log(`No questions found for psychometric category: ${category}`);
@@ -1037,15 +1054,19 @@ class AssessmentService {
     
     for (const question of categoryQuestions) {
       const answer = answers.find(a => a.questionId === question.id);
-      if (!answer) continue;
+      if (!answer) {
+        console.log(`No answer found for question ${question.id}`);
+        continue;
+      }
       
       const score = this.calculateQuestionScore(question, answer.value);
+      console.log(`Question ${question.id} score: ${score.score}/${score.maxScore}`);
       totalScore += score.score;
       maxPossibleScore += score.maxScore;
     }
     
     const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
-    console.log(`Psychometric category ${category}: ${result}% (${categoryQuestions.length} questions)`);
+    console.log(`Psychometric category ${category}: ${result}% (${categoryQuestions.length} questions, total: ${totalScore}/${maxPossibleScore})`);
     
     return result;
   }
@@ -1082,7 +1103,7 @@ class AssessmentService {
       maxPossibleScore += score.maxScore;
       
       // Count correct answers for multiple choice questions
-      if (question.type === 'multipleChoice' && score.score > 0) {
+      if ((question.type === 'multipleChoice' || question.type === 'multiple-choice') && score.score > 0) {
         correctAnswers++;
       }
     }
@@ -1122,6 +1143,10 @@ class AssessmentService {
     
     const targetCategories = categoryMapping[category] || [category];
     
+    console.log(`Looking for technical category: ${category}`);
+    console.log(`Target categories:`, targetCategories);
+    console.log(`Available question categories:`, [...new Set(section.questions.map(q => q.category))]);
+    
     const categoryQuestions = section.questions.filter(q => 
       targetCategories.some(target => 
         q.category === target || 
@@ -1129,6 +1154,8 @@ class AssessmentService {
         q.id.includes(target)
       )
     );
+    
+    console.log(`Found ${categoryQuestions.length} questions for category ${category}:`, categoryQuestions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
     
     if (categoryQuestions.length === 0) {
       console.log(`No questions found for technical category: ${category}`);
@@ -1141,15 +1168,19 @@ class AssessmentService {
     
     for (const question of categoryQuestions) {
       const answer = answers.find(a => a.questionId === question.id);
-      if (!answer) continue;
+      if (!answer) {
+        console.log(`No answer found for question ${question.id}`);
+        continue;
+      }
       
       const score = this.calculateQuestionScore(question, answer.value);
+      console.log(`Question ${question.id} score: ${score.score}/${score.maxScore}`);
       totalScore += score.score;
       maxPossibleScore += score.maxScore;
     }
     
     const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
-    console.log(`Technical category ${category}: ${result}% (${categoryQuestions.length} questions)`);
+    console.log(`Technical category ${category}: ${result}% (${categoryQuestions.length} questions, total: ${totalScore}/${maxPossibleScore})`);
     
     return result;
   }
