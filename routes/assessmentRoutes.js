@@ -190,21 +190,8 @@ router.get('/categories/list', async (req, res) => {
   console.log('GET /api/assessments/categories/list - Fetching assessment categories');
   try {
     const categories = [
-      'Technology',
-      'Business & Strategy',
-      'Design & Experience',
-      'Healthcare & Life Sciences',
-      'Engineering & Manufacturing',
-      'Security & Risk',
-      'Data & Analytics',
-      'Digital Marketing & Content',
-      'Product & Innovation',
-      'Cloud & Infrastructure',
       'Emerging Technologies',
-      'Customer Success & Support',
-      'Education & Training',
-      'Green & Sustainability',
-      'Legal, Compliance & Governance'
+      'Engineering & Manufacturing'
     ];
     res.json(categories);
   } catch (error) {
@@ -229,21 +216,8 @@ router.get('/health/status', async (req, res) => {
       totalAssessments: totalAssessments.length,
       featuredAssessments: featuredAssessments.length,
       categories: [
-        'Technology',
-        'Business & Strategy',
-        'Design & Experience',
-        'Healthcare & Life Sciences',
-        'Engineering & Manufacturing',
-        'Security & Risk',
-        'Data & Analytics',
-        'Digital Marketing & Content',
-        'Product & Innovation',
-        'Cloud & Infrastructure',
         'Emerging Technologies',
-        'Customer Success & Support',
-        'Education & Training',
-        'Green & Sustainability',
-        'Legal, Compliance & Governance'
+        'Engineering & Manufacturing'
       ]
     });
   } catch (error) {
