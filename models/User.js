@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-  name: {
+  country: {
     type: String,
     required: true,
+    default: 'India',
     trim: true
   },
   email: {

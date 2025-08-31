@@ -7,12 +7,12 @@ const router = express.Router();
 router.post('/', async (req, res) => {
   console.log('POST /api/users - Creating/updating user');
   try {
-    const { name, email, ageRange } = req.body;
+    const { country, email, ageRange } = req.body;
 
     // Validate required fields
-    if (!name || !email || !ageRange) {
+    if (!country || !email || !ageRange) {
       return res.status(400).json({
-        message: 'Name, email, and age range are required'
+        message: 'Country, email, and age range are required'
       });
     }
 
@@ -25,20 +25,20 @@ router.post('/', async (req, res) => {
     }
 
     // Validate age range
-    const validAgeRanges = ['11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '100+'];
+    const validAgeRanges = ['11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80'];
     if (!validAgeRanges.includes(ageRange)) {
       return res.status(400).json({
         message: 'Please provide a valid age range'
       });
     }
 
-    const user = await userService.createOrUpdateUser({ name, email, ageRange });
+    const user = await userService.createOrUpdateUser({ country, email, ageRange });
     
     res.status(201).json({
       message: 'User created/updated successfully',
       user: {
         id: user._id,
-        name: user.name,
+        country: user.country,
         email: user.email,
         ageRange: user.ageRange,
         createdAt: user.createdAt
@@ -76,7 +76,7 @@ router.get('/email/:email', async (req, res) => {
     res.json({
       user: {
         id: user._id,
-        name: user.name,
+        country: user.country,
         email: user.email,
         ageRange: user.ageRange,
         createdAt: user.createdAt,
@@ -109,7 +109,7 @@ router.get('/:id', async (req, res) => {
     res.json({
       user: {
         id: user._id,
-        name: user.name,
+        country: user.country,
         email: user.email,
         ageRange: user.ageRange,
         createdAt: user.createdAt,
@@ -134,7 +134,10 @@ router.get('/:id/analytics', async (req, res) => {
     const { id } = req.params;
     const analytics = await userService.getUserAnalytics(id);
     
-    res.json(analytics);
+    res.json({
+      userId: id,
+      analytics
+    });
   } catch (error) {
     console.error('Error getting user analytics:', error);
     if (error.message === 'User not found') {
@@ -246,7 +249,7 @@ router.get('/age-range/:ageRange', async (req, res) => {
       count: users.length,
       users: users.map(user => ({
         id: user._id,
-        name: user.name,
+        country: user.country,
         email: user.email,
         createdAt: user.createdAt,
         totalAssessments: user.totalAssessments,

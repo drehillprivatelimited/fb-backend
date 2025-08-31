@@ -4,14 +4,14 @@ class UserService {
   // Create or update user
   async createOrUpdateUser(userData) {
     try {
-      const { name, email, ageRange } = userData;
+      const { country, email, ageRange } = userData;
       
       // Check if user already exists
       let user = await User.findOne({ email });
       
       if (user) {
         // Update existing user
-        user.name = name;
+        user.country = country;
         user.ageRange = ageRange;
         user.updatedAt = new Date();
         await user.save();
@@ -19,7 +19,7 @@ class UserService {
       } else {
         // Create new user
         user = new User({
-          name,
+          country,
           email,
           ageRange
         });
@@ -44,9 +44,9 @@ class UserService {
   }
 
   // Get user by ID
-  async getUserById(userId) {
+  async getUserById(id) {
     try {
-      const user = await User.findById(userId);
+      const user = await User.findById(id);
       return user;
     } catch (error) {
       console.error('Error getting user by ID:', error);
@@ -61,7 +61,7 @@ class UserService {
       if (!user) {
         throw new Error('User not found');
       }
-
+      
       user.assessmentSessions.push(sessionId);
       user.totalAssessments += 1;
       user.lastAssessmentDate = new Date();
@@ -81,13 +81,13 @@ class UserService {
       if (!user) {
         throw new Error('User not found');
       }
-
+      
       user.completedAssessments += 1;
       await user.save();
       
       return user;
     } catch (error) {
-      console.error('Error marking assessment completed:', error);
+      console.error('Error marking assessment as completed:', error);
       throw error;
     }
   }
@@ -99,14 +99,13 @@ class UserService {
       if (!user) {
         throw new Error('User not found');
       }
-
+      
       return {
         totalAssessments: user.totalAssessments,
         completedAssessments: user.completedAssessments,
         completionRate: user.totalAssessments > 0 ? (user.completedAssessments / user.totalAssessments) * 100 : 0,
         lastAssessmentDate: user.lastAssessmentDate,
-        ageRange: user.ageRange,
-        joinedDate: user.createdAt
+        assessmentSessions: user.assessmentSessions
       };
     } catch (error) {
       console.error('Error getting user analytics:', error);
@@ -128,7 +127,8 @@ class UserService {
       return {
         users,
         total,
-        hasMore: total > skip + limit
+        limit,
+        skip
       };
     } catch (error) {
       console.error('Error getting all users:', error);
