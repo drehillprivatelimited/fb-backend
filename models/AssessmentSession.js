@@ -222,6 +222,12 @@ const assessmentSessionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed, // Allow flexible results structure for universal format
     required: false
   },
+  // Optional user feedback captured before viewing results
+  feedback: {
+    rating: { type: Number, min: 1, max: 5 },
+    comments: { type: String, trim: true },
+    submittedAt: { type: Date },
+  },
   metadata: {
     userAgent: String,
     ipAddress: String,

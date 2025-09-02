@@ -4,43 +4,24 @@ class UserService {
   // Create or update user
   async createOrUpdateUser(userData) {
     try {
-      const { country, email, ageRange } = userData;
-      
-      // Check if user already exists
-      let user = await User.findOne({ email });
-      
-      if (user) {
-        // Update existing user
-        user.country = country;
-        user.ageRange = ageRange;
-        user.updatedAt = new Date();
-        await user.save();
-        return user;
-      } else {
-        // Create new user
-        user = new User({
-          country,
-          email,
-          ageRange
-        });
-        await user.save();
-        return user;
-      }
+      const { country, ageRange } = userData;
+
+      // Always create a new user since email is no longer used as identifier
+      const user = new User({
+        country,
+        ageRange
+      });
+      await user.save();
+      return user;
     } catch (error) {
       console.error('Error creating/updating user:', error);
       throw error;
     }
   }
 
-  // Get user by email
-  async getUserByEmail(email) {
-    try {
-      const user = await User.findOne({ email });
-      return user;
-    } catch (error) {
-      console.error('Error getting user by email:', error);
-      throw error;
-    }
+  // Get user by email (deprecated)
+  async getUserByEmail() {
+    throw new Error('Lookup by email is no longer supported');
   }
 
   // Get user by ID

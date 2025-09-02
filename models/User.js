@@ -7,13 +7,6 @@ const userSchema = new mongoose.Schema({
     default: 'India',
     trim: true
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
   ageRange: {
     type: String,
     required: true,
@@ -54,7 +47,6 @@ userSchema.pre('save', function(next) {
 });
 
 // Create indexes for better query performance
-userSchema.index({ email: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ ageRange: 1 });
 

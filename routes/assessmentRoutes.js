@@ -118,7 +118,7 @@ router.post('/:id/submit', async (req, res) => {
   console.log(`POST /api/assessments/${req.params.id}/submit - Submitting assessment answers`);
   try {
     const { id } = req.params;
-    const { sessionId, answers, userId } = req.body;
+    const { sessionId, answers, userId, feedback } = req.body;
 
     if (!sessionId || !answers) {
       return res.status(400).json({ 
@@ -126,7 +126,7 @@ router.post('/:id/submit', async (req, res) => {
       });
     }
 
-    const result = await assessmentService.submitAssessment(sessionId, answers);
+    const result = await assessmentService.submitAssessment(sessionId, answers, feedback);
     
     // If user ID is provided, mark the assessment as completed for the user
     if (userId) {
@@ -181,6 +181,27 @@ router.get('/:id/results/:sessionId', async (req, res) => {
         message: 'Error fetching assessment results', 
         error: error.message 
       });
+    }
+  }
+});
+
+// Save feedback only (for sessions that did not reach results)
+router.post('/:id/feedback/:sessionId', async (req, res) => {
+  console.log(`POST /api/assessments/${req.params.id}/feedback/${req.params.sessionId} - Saving feedback`);
+  try {
+    const { sessionId } = req.params;
+    const { feedback } = req.body;
+    if (!feedback) {
+      return res.status(400).json({ message: 'Feedback is required' });
+    }
+    const result = await assessmentService.saveFeedback(sessionId, feedback);
+    res.json(result);
+  } catch (error) {
+    console.error('Error saving feedback:', error);
+    if (error.message.includes('Session not found')) {
+      res.status(404).json({ message: 'Session not found' });
+    } else {
+      res.status(500).json({ message: 'Error saving feedback', error: error.message });
     }
   }
 });

@@ -7,20 +7,12 @@ const router = express.Router();
 router.post('/', async (req, res) => {
   console.log('POST /api/users - Creating/updating user');
   try {
-    const { country, email, ageRange } = req.body;
+    const { country, ageRange } = req.body;
 
     // Validate required fields
-    if (!country || !email || !ageRange) {
+    if (!country || !ageRange) {
       return res.status(400).json({
-        message: 'Country, email, and age range are required'
-      });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        message: 'Please provide a valid email address'
+        message: 'Country and age range are required'
       });
     }
 
@@ -32,27 +24,19 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const user = await userService.createOrUpdateUser({ country, email, ageRange });
+    const user = await userService.createOrUpdateUser({ country, ageRange });
     
     res.status(201).json({
       message: 'User created/updated successfully',
       user: {
         id: user._id,
         country: user.country,
-        email: user.email,
         ageRange: user.ageRange,
         createdAt: user.createdAt
       }
     });
   } catch (error) {
     console.error('Error creating/updating user:', error);
-    
-    if (error.code === 11000) {
-      return res.status(409).json({
-        message: 'A user with this email already exists'
-      });
-    }
-    
     res.status(500).json({
       message: 'Error creating/updating user',
       error: error.message
@@ -62,35 +46,7 @@ router.post('/', async (req, res) => {
 
 // Get user by email
 router.get('/email/:email', async (req, res) => {
-  console.log(`GET /api/users/email/${req.params.email} - Getting user by email`);
-  try {
-    const { email } = req.params;
-    const user = await userService.getUserByEmail(email);
-    
-    if (!user) {
-      return res.status(404).json({
-        message: 'User not found'
-      });
-    }
-    
-    res.json({
-      user: {
-        id: user._id,
-        country: user.country,
-        email: user.email,
-        ageRange: user.ageRange,
-        createdAt: user.createdAt,
-        totalAssessments: user.totalAssessments,
-        completedAssessments: user.completedAssessments
-      }
-    });
-  } catch (error) {
-    console.error('Error getting user by email:', error);
-    res.status(500).json({
-      message: 'Error getting user',
-      error: error.message
-    });
-  }
+  return res.status(410).json({ message: 'Lookup by email is no longer supported' });
 });
 
 // Get user by ID
@@ -110,7 +66,6 @@ router.get('/:id', async (req, res) => {
       user: {
         id: user._id,
         country: user.country,
-        email: user.email,
         ageRange: user.ageRange,
         createdAt: user.createdAt,
         totalAssessments: user.totalAssessments,
@@ -250,7 +205,6 @@ router.get('/age-range/:ageRange', async (req, res) => {
       users: users.map(user => ({
         id: user._id,
         country: user.country,
-        email: user.email,
         createdAt: user.createdAt,
         totalAssessments: user.totalAssessments,
         completedAssessments: user.completedAssessments

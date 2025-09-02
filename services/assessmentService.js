@@ -221,7 +221,7 @@ class AssessmentService {
   }
 
   // Submit assessment answers and calculate results
-  async submitAssessment(sessionId, answers) {
+  async submitAssessment(sessionId, answers, feedback) {
     try {
       console.log('Submitting assessment with answers:', JSON.stringify(answers, null, 2));
       
@@ -242,6 +242,15 @@ class AssessmentService {
       session.duration = Math.round(
         (session.completedAt - session.startedAt) / (1000 * 60)
       );
+
+      // If feedback included, store it
+      if (feedback && (feedback.rating || feedback.comments)) {
+        session.feedback = {
+          rating: typeof feedback.rating === 'number' ? feedback.rating : undefined,
+          comments: feedback.comments || undefined,
+          submittedAt: new Date()
+        };
+      }
 
       // Calculate results
       const results = await this.calculateResults(session.assessmentId, answers);
@@ -284,6 +293,25 @@ class AssessmentService {
       };
     } catch (error) {
       throw new Error(`Error fetching results: ${error.message}`);
+    }
+  }
+
+  // Save feedback for a session without changing completion status
+  async saveFeedback(sessionId, feedback) {
+    try {
+      const session = await AssessmentSession.findOne({ sessionId });
+      if (!session) {
+        throw new Error('Session not found');
+      }
+      session.feedback = {
+        rating: typeof feedback?.rating === 'number' ? feedback.rating : undefined,
+        comments: feedback?.comments || undefined,
+        submittedAt: new Date()
+      };
+      await session.save();
+      return { ok: true };
+    } catch (error) {
+      throw new Error(`Error saving feedback: ${error.message}`);
     }
   }
 
