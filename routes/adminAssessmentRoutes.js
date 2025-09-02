@@ -1,8 +1,7 @@
-import express from 'express';
 import Assessment from '../models/Assessment.js';
-import AssessmentSection from '../models/AssessmentSection.js';
 import AssessmentSession from '../models/AssessmentSession.js';
 import { verifyAdmin } from '../middleware/authMiddleware.js';
+import express from 'express';
 
 const router = express.Router();
 
@@ -10,26 +9,9 @@ const router = express.Router();
 router.get('/', verifyAdmin, async (req, res) => {
   console.log('GET /api/admin/assessments - Fetching all assessments (admin)');
   try {
-    const { page = 1, limit = 20, category, status } = req.query;
-    
-    const filter = {};
-    if (category) filter.category = category;
-    if (status === 'active') filter.isActive = true;
-    if (status === 'inactive') filter.isActive = false;
-    
-    const assessments = await Assessment.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-    
-    const total = await Assessment.countDocuments(filter);
-    
-    res.json({
-      assessments,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      total
-    });
+    const assessments = await Assessment.find().sort({ createdAt: -1 });
+    console.log(`Found ${assessments.length} assessments`);
+    res.json(assessments);
   } catch (error) {
     console.error('Error fetching assessments (admin):', error);
     res.status(500).json({ 
@@ -39,31 +21,26 @@ router.get('/', verifyAdmin, async (req, res) => {
   }
 });
 
-// Get assessment by ID with sections (admin)
+// Get specific assessment with sections (admin)
 router.get('/:id', verifyAdmin, async (req, res) => {
   console.log(`GET /api/admin/assessments/${req.params.id} - Fetching assessment (admin)`);
   try {
     const { id } = req.params;
+    const assessmentData = await Assessment.findOne({ id });
     
-    const assessment = await Assessment.findOne({ id });
-    if (!assessment) {
+    if (!assessmentData) {
       return res.status(404).json({ message: 'Assessment not found' });
     }
     
-    // Convert the assessment to the format expected by the frontend
-    const assessmentData = assessment.toObject();
+    console.log('Assessment found:', assessmentData.title);
     
-    // If the assessment has embedded sections, use them
+    // The assessment should have embedded sections
     if (assessmentData.sections) {
       console.log('Assessment has embedded sections:', Object.keys(assessmentData.sections));
       res.json(assessmentData);
     } else {
-      // If not, try to get sections from AssessmentSection collection
-      const sections = await AssessmentSection.find({ assessmentId: id })
-        .sort({ orderIndex: 1 });
-      
-      // Convert sections array to embedded format
-      const embeddedSections = {
+      // If no embedded sections, return assessment with default section structure
+      const defaultSections = {
         introduction: {
           title: 'Introduction',
           description: 'Welcome to your career readiness assessment',
@@ -106,21 +83,9 @@ router.get('/:id', verifyAdmin, async (req, res) => {
         }
       };
       
-      // Map sections to embedded format
-      sections.forEach(section => {
-        const sectionType = section.type || 'psychometric';
-        if (embeddedSections[sectionType]) {
-          embeddedSections[sectionType] = {
-            ...embeddedSections[sectionType],
-            ...section.toObject(),
-            questions: section.questions || []
-          };
-        }
-      });
-      
       res.json({
         ...assessmentData,
-        sections: embeddedSections
+        sections: defaultSections
       });
     }
   } catch (error) {
@@ -359,9 +324,6 @@ router.delete('/:id', verifyAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Assessment not found' });
     }
     
-    // Delete associated sections
-    await AssessmentSection.deleteMany({ assessmentId: id });
-    
     // Delete the assessment
     await Assessment.deleteOne({ id });
     
@@ -405,18 +367,14 @@ router.post('/:id/sections', verifyAdmin, async (req, res) => {
     }
     
     // Check if section already exists
-    const existingSection = await AssessmentSection.findOne({ 
-      assessmentId: id, 
-      id: sectionId 
-    });
+    const existingSection = assessment.sections.find(s => s.id === sectionId);
     if (existingSection) {
       return res.status(400).json({ 
         message: 'Section with this ID already exists' 
       });
     }
     
-    const section = new AssessmentSection({
-      assessmentId: id,
+    const newSection = {
       id: sectionId,
       title,
       description,
@@ -428,11 +386,14 @@ router.post('/:id/sections', verifyAdmin, async (req, res) => {
         algorithm: 'average',
         thresholds: { excellent: 80, good: 60, needsImprovement: 40 }
       }
-    });
+    };
     
-    await section.save();
-    console.log('Assessment section created successfully:', section.title);
-    res.status(201).json(section);
+    assessment.sections.push(newSection);
+    assessment.updatedAt = new Date();
+    await assessment.save();
+    
+    console.log('Assessment section created successfully:', newSection.title);
+    res.status(201).json(newSection);
   } catch (error) {
     console.error('Error creating assessment section:', error);
     res.status(500).json({ 
@@ -449,27 +410,28 @@ router.put('/:id/sections/:sectionId', verifyAdmin, async (req, res) => {
     const { id, sectionId } = req.params;
     const updateData = req.body;
     
-    const section = await AssessmentSection.findOne({ 
-      assessmentId: id, 
-      id: sectionId 
-    });
-    
-    if (!section) {
+    const assessment = await Assessment.findOne({ id });
+    if (!assessment) {
+      return res.status(404).json({ message: 'Assessment not found' });
+    }
+
+    const sectionIndex = assessment.sections.findIndex(s => s.id === sectionId);
+    if (sectionIndex === -1) {
       return res.status(404).json({ message: 'Assessment section not found' });
     }
     
     // Update section fields
     Object.keys(updateData).forEach(key => {
-      if (key !== 'assessmentId' && key !== 'id' && section.schema.paths[key]) {
-        section[key] = updateData[key];
+      if (key !== 'assessmentId' && key !== 'id' && assessment.schema.paths[key]) {
+        assessment.sections[sectionIndex][key] = updateData[key];
       }
     });
     
-    section.updatedAt = new Date();
-    await section.save();
+    assessment.updatedAt = new Date();
+    await assessment.save();
     
-    console.log('Assessment section updated successfully:', section.title);
-    res.json(section);
+    console.log('Assessment section updated successfully:', assessment.sections[sectionIndex].title);
+    res.json(assessment.sections[sectionIndex]);
   } catch (error) {
     console.error('Error updating assessment section:', error);
     res.status(500).json({ 
@@ -485,22 +447,22 @@ router.delete('/:id/sections/:sectionId', verifyAdmin, async (req, res) => {
   try {
     const { id, sectionId } = req.params;
     
-    const section = await AssessmentSection.findOne({ 
-      assessmentId: id, 
-      id: sectionId 
-    });
-    
-    if (!section) {
-      return res.status(404).json({ message: 'Assessment section not found' });
+    const assessment = await Assessment.findOne({ id });
+    if (!assessment) {
+      return res.status(404).json({ message: 'Assessment not found' });
     }
-    
-    await AssessmentSection.deleteOne({ 
-      assessmentId: id, 
-      id: sectionId 
-    });
-    
-    console.log('Assessment section deleted successfully:', section.title);
-    res.json({ message: 'Assessment section deleted successfully' });
+
+    const initialSectionsLength = assessment.sections.length;
+    assessment.sections = assessment.sections.filter(s => s.id !== sectionId);
+
+    if (assessment.sections.length < initialSectionsLength) {
+      assessment.updatedAt = new Date();
+      await assessment.save();
+      console.log('Assessment section deleted successfully:', assessment.sections.find(s => s.id === sectionId)?.title);
+      res.json({ message: 'Assessment section deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'Assessment section not found' });
+    }
   } catch (error) {
     console.error('Error deleting assessment section:', error);
     res.status(500).json({ 

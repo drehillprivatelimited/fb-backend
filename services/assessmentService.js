@@ -1,5 +1,4 @@
 import Assessment from '../models/Assessment.js';
-import AssessmentSection from '../models/AssessmentSection.js';
 import AssessmentSession from '../models/AssessmentSession.js';
 import { v4 as uuidv4 } from 'uuid';
 
