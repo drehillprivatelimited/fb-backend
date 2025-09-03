@@ -50,11 +50,11 @@ router.get('/featured', async (req, res) => {
 });
 
 // Get specific assessment with sections
-router.get('/:id', async (req, res) => {
-  console.log(`GET /api/assessments/${req.params.id} - Fetching assessment`);
+router.get('/:assessmentId', async (req, res) => {
+  console.log(`GET /api/assessments/${req.params.assessmentId} - Fetching assessment`);
   try {
-    const { id } = req.params;
-    const assessment = await assessmentService.getAssessmentById(id);
+    const { assessmentId } = req.params;
+    const assessment = await assessmentService.getAssessmentById(assessmentId);
     res.json(assessment);
   } catch (error) {
     console.error('Error fetching assessment:', error);
@@ -72,10 +72,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // Start assessment session
-router.post('/:id/start', async (req, res) => {
-  console.log(`POST /api/assessments/${req.params.id}/start - Starting assessment session`);
+router.post('/:assessmentId/start', async (req, res) => {
+  console.log(`POST /api/assessments/${req.params.assessmentId}/start - Starting assessment session`);
   try {
-    const { id } = req.params;
+    const { assessmentId } = req.params;
     const { userId, userEmail } = req.body;
     const metadata = {
       userAgent: req.headers['user-agent'] || '',
@@ -84,7 +84,7 @@ router.post('/:id/start', async (req, res) => {
       deviceType: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'desktop'
     };
 
-    const session = await assessmentService.startAssessmentSession(id, userId, metadata);
+    const session = await assessmentService.startAssessmentSession(assessmentId, userId, metadata);
     
     // If user ID is provided, add the assessment session to user's record
     if (userId) {
@@ -114,10 +114,10 @@ router.post('/:id/start', async (req, res) => {
 });
 
 // Submit assessment answers
-router.post('/:id/submit', async (req, res) => {
-  console.log(`POST /api/assessments/${req.params.id}/submit - Submitting assessment answers`);
+router.post('/:assessmentId/submit', async (req, res) => {
+  console.log(`POST /api/assessments/${req.params.assessmentId}/submit - Submitting assessment answers`);
   try {
-    const { id } = req.params;
+    const { assessmentId } = req.params;
     const { sessionId, answers, userId, feedback } = req.body;
 
     if (!sessionId || !answers) {
@@ -146,10 +146,6 @@ router.post('/:id/submit', async (req, res) => {
       res.status(404).json({ 
         message: 'Session not found' 
       });
-    } else if (error.message.includes('already completed')) {
-      res.status(400).json({ 
-        message: 'Assessment already completed' 
-      });
     } else {
       res.status(500).json({ 
         message: 'Error submitting assessment', 
@@ -160,8 +156,8 @@ router.post('/:id/submit', async (req, res) => {
 });
 
 // Get assessment results
-router.get('/:id/results/:sessionId', async (req, res) => {
-  console.log(`GET /api/assessments/${req.params.id}/results/${req.params.sessionId} - Fetching assessment results`);
+router.get('/:assessmentId/results/:sessionId', async (req, res) => {
+  console.log(`GET /api/assessments/${req.params.assessmentId}/results/${req.params.sessionId} - Fetching assessment results`);
   try {
     const { sessionId } = req.params;
     const results = await assessmentService.getAssessmentResults(sessionId);
@@ -186,18 +182,31 @@ router.get('/:id/results/:sessionId', async (req, res) => {
 });
 
 // Save feedback only (for sessions that did not reach results)
-router.post('/:id/feedback/:sessionId', async (req, res) => {
-  console.log(`POST /api/assessments/${req.params.id}/feedback/${req.params.sessionId} - Saving feedback`);
+router.post('/:assessmentId/feedback/:sessionId', async (req, res) => {
+  console.log(`POST /api/assessments/${req.params.assessmentId}/feedback/${req.params.sessionId} - Saving feedback`);
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('Request params:', JSON.stringify(req.params, null, 2));
+  
   try {
     const { sessionId } = req.params;
     const { feedback } = req.body;
+    
+    console.log('Extracted sessionId:', sessionId);
+    console.log('Extracted feedback:', JSON.stringify(feedback, null, 2));
+    
     if (!feedback) {
+      console.log('No feedback provided in request body');
       return res.status(400).json({ message: 'Feedback is required' });
     }
+    
+    console.log('Calling assessmentService.saveFeedback with:', { sessionId, feedback });
     const result = await assessmentService.saveFeedback(sessionId, feedback);
+    console.log('saveFeedback result:', JSON.stringify(result, null, 2));
+    
     res.json(result);
   } catch (error) {
     console.error('Error saving feedback:', error);
+    console.error('Error stack:', error.stack);
     if (error.message.includes('Session not found')) {
       res.status(404).json({ message: 'Session not found' });
     } else {

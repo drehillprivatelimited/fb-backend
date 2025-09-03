@@ -298,18 +298,34 @@ class AssessmentService {
   // Save feedback for a session without changing completion status
   async saveFeedback(sessionId, feedback) {
     try {
+      console.log('saveFeedback called with:', { sessionId, feedback });
+      
       const session = await AssessmentSession.findOne({ sessionId });
+      console.log('Found session:', session ? 'Yes' : 'No');
+      
       if (!session) {
+        console.log('Session not found for sessionId:', sessionId);
         throw new Error('Session not found');
       }
+      
+      console.log('Session before update:', JSON.stringify(session, null, 2));
+      
       session.feedback = {
         rating: typeof feedback?.rating === 'number' ? feedback.rating : undefined,
         comments: feedback?.comments || undefined,
         submittedAt: new Date()
       };
-      await session.save();
+      
+      console.log('Updated session feedback:', JSON.stringify(session.feedback, null, 2));
+      
+      const savedSession = await session.save();
+      console.log('Session saved successfully:', savedSession._id);
+      console.log('Saved session feedback:', JSON.stringify(savedSession.feedback, null, 2));
+      
       return { ok: true };
     } catch (error) {
+      console.error('Error in saveFeedback:', error);
+      console.error('Error stack:', error.stack);
       throw new Error(`Error saving feedback: ${error.message}`);
     }
   }
