@@ -68,9 +68,7 @@ router.get('/:id', async (req, res) => {
         country: user.country,
         ageRange: user.ageRange,
         createdAt: user.createdAt,
-        totalAssessments: user.totalAssessments,
-        completedAssessments: user.completedAssessments,
-        lastAssessmentDate: user.lastAssessmentDate
+
       }
     });
   } catch (error) {
@@ -82,98 +80,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Get user analytics
-router.get('/:id/analytics', async (req, res) => {
-  console.log(`GET /api/users/${req.params.id}/analytics - Getting user analytics`);
-  try {
-    const { id } = req.params;
-    const analytics = await userService.getUserAnalytics(id);
-    
-    res.json({
-      userId: id,
-      analytics
-    });
-  } catch (error) {
-    console.error('Error getting user analytics:', error);
-    if (error.message === 'User not found') {
-      res.status(404).json({
-        message: 'User not found'
-      });
-    } else {
-      res.status(500).json({
-        message: 'Error getting user analytics',
-        error: error.message
-      });
-    }
-  }
-});
 
-// Add assessment session to user
-router.post('/:id/assessment-session', async (req, res) => {
-  console.log(`POST /api/users/${req.params.id}/assessment-session - Adding assessment session`);
-  try {
-    const { id } = req.params;
-    const { sessionId } = req.body;
-    
-    if (!sessionId) {
-      return res.status(400).json({
-        message: 'Session ID is required'
-      });
-    }
-    
-    const user = await userService.addAssessmentSession(id, sessionId);
-    
-    res.json({
-      message: 'Assessment session added successfully',
-      user: {
-        id: user._id,
-        totalAssessments: user.totalAssessments,
-        lastAssessmentDate: user.lastAssessmentDate
-      }
-    });
-  } catch (error) {
-    console.error('Error adding assessment session:', error);
-    if (error.message === 'User not found') {
-      res.status(404).json({
-        message: 'User not found'
-      });
-    } else {
-      res.status(500).json({
-        message: 'Error adding assessment session',
-        error: error.message
-      });
-    }
-  }
-});
 
-// Mark assessment as completed
-router.post('/:id/complete-assessment', async (req, res) => {
-  console.log(`POST /api/users/${req.params.id}/complete-assessment - Marking assessment as completed`);
-  try {
-    const { id } = req.params;
-    const user = await userService.markAssessmentCompleted(id);
-    
-    res.json({
-      message: 'Assessment marked as completed',
-      user: {
-        id: user._id,
-        completedAssessments: user.completedAssessments
-      }
-    });
-  } catch (error) {
-    console.error('Error marking assessment as completed:', error);
-    if (error.message === 'User not found') {
-      res.status(404).json({
-        message: 'User not found'
-      });
-    } else {
-      res.status(500).json({
-        message: 'Error marking assessment as completed',
-        error: error.message
-      });
-    }
-  }
-});
+
+
+
 
 // Get all users (admin only)
 router.get('/', async (req, res) => {
@@ -206,8 +117,7 @@ router.get('/age-range/:ageRange', async (req, res) => {
         id: user._id,
         country: user.country,
         createdAt: user.createdAt,
-        totalAssessments: user.totalAssessments,
-        completedAssessments: user.completedAssessments
+
       }))
     });
   } catch (error) {

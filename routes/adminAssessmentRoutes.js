@@ -472,64 +472,7 @@ router.delete('/:id/sections/:sectionId', verifyAdmin, async (req, res) => {
   }
 });
 
-// Get assessment analytics (admin)
-router.get('/:id/analytics', verifyAdmin, async (req, res) => {
-  console.log(`GET /api/admin/assessments/${req.params.id}/analytics - Fetching assessment analytics`);
-  try {
-    const { id } = req.params;
-    
-    // Get assessment sessions
-    const sessions = await AssessmentSession.find({ assessmentId: id });
-    
-    const analytics = {
-      totalSessions: sessions.length,
-      completedSessions: sessions.filter(s => s.status === 'completed').length,
-      abandonedSessions: sessions.filter(s => s.status === 'abandoned').length,
-      averageDuration: sessions.length > 0 
-        ? Math.round(sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / sessions.length)
-        : 0,
-      averageScore: 0,
-      scoreDistribution: {
-        excellent: 0,
-        good: 0,
-        needsImprovement: 0
-      },
-      recentSessions: sessions
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 10)
-        .map(s => ({
-          sessionId: s.sessionId,
-          status: s.status,
-          duration: s.duration,
-          createdAt: s.createdAt,
-          overallScore: s.results?.overallScore || 0
-        }))
-    };
-    
-    // Calculate average score and distribution
-    const completedSessions = sessions.filter(s => s.status === 'completed' && s.results?.overallScore);
-    if (completedSessions.length > 0) {
-      analytics.averageScore = Math.round(
-        completedSessions.reduce((sum, s) => sum + s.results.overallScore, 0) / completedSessions.length
-      );
-      
-      completedSessions.forEach(session => {
-        const score = session.results.overallScore;
-        if (score >= 75) analytics.scoreDistribution.excellent++;
-        else if (score >= 50) analytics.scoreDistribution.good++;
-        else analytics.scoreDistribution.needsImprovement++;
-      });
-    }
-    
-    res.json(analytics);
-  } catch (error) {
-    console.error('Error fetching assessment analytics:', error);
-    res.status(500).json({ 
-      message: 'Error fetching assessment analytics', 
-      error: error.message 
-    });
-  }
-});
+
 
 
 
