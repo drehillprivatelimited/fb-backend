@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
   ageRange: {
     type: String,
     required: true,
-    enum: ['11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80']
+    enum: ['11-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+']
   },
   createdAt: {
     type: Date,
@@ -20,24 +20,7 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  // Track assessment sessions
-  assessmentSessions: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'AssessmentSession'
-  }],
-  // Analytics data
-  totalAssessments: {
-    type: Number,
-    default: 0
-  },
-  completedAssessments: {
-    type: Number,
-    default: 0
-  },
-  lastAssessmentDate: {
-    type: Date,
-    default: null
-  }
+
 });
 
 // Update the updatedAt field before saving

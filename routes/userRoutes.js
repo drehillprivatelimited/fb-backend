@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
     }
 
     // Validate age range
-    const validAgeRanges = ['11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80'];
+    const validAgeRanges = ['11-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
     if (!validAgeRanges.includes(ageRange)) {
       return res.status(400).json({
         message: 'Please provide a valid age range'

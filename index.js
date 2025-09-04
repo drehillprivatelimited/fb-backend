@@ -60,11 +60,6 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  if (req.method === 'POST' && req.path.includes('/feedback/')) {
-    console.log('🔍 Feedback request detected!');
-    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-  }
   next();
 });
 

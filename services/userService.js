@@ -35,64 +35,11 @@ class UserService {
     }
   }
 
-  // Add assessment session to user
-  async addAssessmentSession(userId, sessionId) {
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
-      user.assessmentSessions.push(sessionId);
-      user.totalAssessments += 1;
-      user.lastAssessmentDate = new Date();
-      await user.save();
-      
-      return user;
-    } catch (error) {
-      console.error('Error adding assessment session to user:', error);
-      throw error;
-    }
-  }
 
-  // Mark assessment as completed for user
-  async markAssessmentCompleted(userId) {
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
-      user.completedAssessments += 1;
-      await user.save();
-      
-      return user;
-    } catch (error) {
-      console.error('Error marking assessment as completed:', error);
-      throw error;
-    }
-  }
 
-  // Get user analytics
-  async getUserAnalytics(userId) {
-    try {
-      const user = await User.findById(userId).populate('assessmentSessions');
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
-      return {
-        totalAssessments: user.totalAssessments,
-        completedAssessments: user.completedAssessments,
-        completionRate: user.totalAssessments > 0 ? (user.completedAssessments / user.totalAssessments) * 100 : 0,
-        lastAssessmentDate: user.lastAssessmentDate,
-        assessmentSessions: user.assessmentSessions
-      };
-    } catch (error) {
-      console.error('Error getting user analytics:', error);
-      throw error;
-    }
-  }
+
+
+
 
   // Get all users (for admin purposes)
   async getAllUsers(limit = 50, skip = 0) {

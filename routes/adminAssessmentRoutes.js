@@ -1,5 +1,5 @@
 import Assessment from '../models/Assessment.js';
-import AssessmentSession from '../models/AssessmentSession.js';
+
 import { verifyAdmin } from '../middleware/authMiddleware.js';
 import express from 'express';
 
@@ -531,37 +531,6 @@ router.get('/:id/analytics', verifyAdmin, async (req, res) => {
   }
 });
 
-// Get all assessment sessions (admin)
-router.get('/:id/sessions', verifyAdmin, async (req, res) => {
-  console.log(`GET /api/admin/assessments/${req.params.id}/sessions - Fetching assessment sessions`);
-  try {
-    const { id } = req.params;
-    const { page = 1, limit = 20, status } = req.query;
-    
-    const filter = { assessmentId: id };
-    if (status) filter.status = status;
-    
-    const sessions = await AssessmentSession.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .select('sessionId status startedAt completedAt duration results.overallScore');
-    
-    const total = await AssessmentSession.countDocuments(filter);
-    
-    res.json({
-      sessions,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      total
-    });
-  } catch (error) {
-    console.error('Error fetching assessment sessions:', error);
-    res.status(500).json({ 
-      message: 'Error fetching assessment sessions', 
-      error: error.message 
-    });
-  }
-});
+
 
 export default router;

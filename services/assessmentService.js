@@ -1,6 +1,4 @@
 import Assessment from '../models/Assessment.js';
-import AssessmentSession from '../models/AssessmentSession.js';
-import { v4 as uuidv4 } from 'uuid';
 
 // Utility function to generate scale options for likert questions
 const generateScaleOptions = (min = 1, max = 7) => {
@@ -178,172 +176,23 @@ class AssessmentService {
     }
   }
 
-  // Start assessment session
-  async startAssessmentSession(assessmentId, userId = null, metadata = {}) {
-    try {
-      // Verify assessment exists and is active
-      const assessment = await Assessment.findOne({ 
-        id: assessmentId, 
-        isActive: true 
-      });
-      
-      if (!assessment) {
-        throw new Error('Assessment not found or inactive');
-      }
 
-      // Create new session
-      const sessionId = uuidv4();
-      const session = new AssessmentSession({
-        sessionId,
-        assessmentId,
-        userId,
-        status: 'in-progress',
-        metadata: {
-          userAgent: metadata.userAgent || '',
-          ipAddress: metadata.ipAddress || '',
-          referrer: metadata.referrer || '',
-          deviceType: metadata.deviceType || 'desktop'
-        },
-        startedAt: new Date()
-      });
 
-      await session.save();
-      
-      return {
-        sessionId,
-        assessmentId,
-        startedAt: session.startedAt
-      };
-    } catch (error) {
-      throw new Error(`Error starting assessment session: ${error.message}`);
-    }
-  }
 
-  // Submit assessment answers and calculate results
-  async submitAssessment(sessionId, answers, feedback) {
-    try {
-      console.log('Submitting assessment with answers:', JSON.stringify(answers, null, 2));
-      
-      const session = await AssessmentSession.findOne({ sessionId });
-      
-      if (!session) {
-        throw new Error('Session not found');
-      }
 
-      if (session.status === 'completed') {
-        throw new Error('Assessment already completed');
-      }
 
-      // Update session with answers
-      session.answers = answers;
-      session.status = 'completed';
-      session.completedAt = new Date();
-      session.duration = Math.round(
-        (session.completedAt - session.startedAt) / (1000 * 60)
-      );
 
-      // If feedback included, store it
-      if (feedback && (feedback.rating || feedback.comments)) {
-        session.feedback = {
-          rating: typeof feedback.rating === 'number' ? feedback.rating : undefined,
-          comments: feedback.comments || undefined,
-          submittedAt: new Date()
-        };
-      }
 
-      // Calculate results
-      const results = await this.calculateResults(session.assessmentId, answers);
-      session.results = results;
-
-      await session.save();
-      
-      console.log('Assessment submitted successfully with results:', JSON.stringify(results, null, 2));
-      
-      return {
-        sessionId,
-        results,
-        duration: session.duration
-      };
-    } catch (error) {
-      console.error('Error in submitAssessment:', error);
-      throw new Error(`Error submitting assessment: ${error.message}`);
-    }
-  }
-
-  // Get assessment results
-  async getAssessmentResults(sessionId) {
-    try {
-      const session = await AssessmentSession.findOne({ sessionId });
-      
-      if (!session) {
-        throw new Error('Session not found');
-      }
-
-      if (session.status !== 'completed') {
-        throw new Error('Assessment not completed');
-      }
-
-      return {
-        sessionId,
-        assessmentId: session.assessmentId,
-        results: session.results,
-        duration: session.duration,
-        completedAt: session.completedAt
-      };
-    } catch (error) {
-      throw new Error(`Error fetching results: ${error.message}`);
-    }
-  }
-
-  // Save feedback for a session without changing completion status
-  async saveFeedback(sessionId, feedback) {
-    try {
-      console.log('saveFeedback called with:', { sessionId, feedback });
-      
-      const session = await AssessmentSession.findOne({ sessionId });
-      console.log('Found session:', session ? 'Yes' : 'No');
-      
-      if (!session) {
-        console.log('Session not found for sessionId:', sessionId);
-        throw new Error('Session not found');
-      }
-      
-      console.log('Session before update:', JSON.stringify(session, null, 2));
-      
-      session.feedback = {
-        rating: typeof feedback?.rating === 'number' ? feedback.rating : undefined,
-        comments: feedback?.comments || undefined,
-        submittedAt: new Date()
-      };
-      
-      console.log('Updated session feedback:', JSON.stringify(session.feedback, null, 2));
-      
-      const savedSession = await session.save();
-      console.log('Session saved successfully:', savedSession._id);
-      console.log('Saved session feedback:', JSON.stringify(savedSession.feedback, null, 2));
-      
-      return { ok: true };
-    } catch (error) {
-      console.error('Error in saveFeedback:', error);
-      console.error('Error stack:', error.stack);
-      throw new Error(`Error saving feedback: ${error.message}`);
-    }
-  }
 
   // Calculate assessment results
   async calculateResults(assessmentId, answers) {
     try {
-      console.log('Calculating results for assessment:', assessmentId);
-      console.log('Answers received:', JSON.stringify(answers, null, 2));
-      
       // Get assessment with embedded sections
       const assessment = await Assessment.findOne({ id: assessmentId });
       
       if (!assessment) {
         throw new Error('Assessment not found');
       }
-
-      console.log('Assessment found:', assessment.title);
 
       // Process questions to add scale options for likert questions
       const processQuestions = (questions) => {
@@ -413,7 +262,7 @@ class AssessmentService {
         }
       }
 
-      console.log('Sections found:', sections.map(s => ({ id: s.id, type: s.type, questionCount: s.questions?.length || 0 })));
+
 
       // Calculate section scores
       const sectionScores = [];
@@ -460,9 +309,6 @@ class AssessmentService {
           section.questions.some(q => q.id === answer.questionId)
         );
 
-        console.log(`Section ${section.type}: Found ${sectionAnswers.length} answers out of ${section.questions?.length || 0} questions`);
-        console.log(`Section ${section.type} questions:`, section.questions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
-
         const score = this.calculateSectionScore(section, sectionAnswers);
         sectionScores.push({
           sectionId: section.id,
@@ -472,21 +318,16 @@ class AssessmentService {
           performance: score.performance
         });
 
-        console.log(`Section ${section.type} score:`, score);
-
         // Calculate detailed scores for each section type
         if (section.type === 'psychometric') {
           const psychometric = this.calculatePsychometricScores(section, sectionAnswers);
           Object.assign(psychometricScores, psychometric);
-          console.log('Psychometric scores:', psychometric);
         } else if (section.type === 'technical') {
           const technical = this.calculateTechnicalScores(section, sectionAnswers);
           Object.assign(technicalScores, technical);
-          console.log('Technical scores:', technical);
         } else if (section.type === 'wiscar') {
           const wiscar = this.calculateWISCARScores(section, sectionAnswers);
           Object.assign(wiscarScores, wiscar);
-          console.log('WISCAR scores:', wiscar);
         }
       }
 
@@ -756,16 +597,7 @@ class AssessmentService {
         }
       };
 
-      console.log('=== FINAL RESULTS STRUCTURE ===');
-      console.log('Final results keys:', Object.keys(finalResults));
-      console.log('Psychometric scores:', finalResults.psychometric);
-      console.log('Technical scores:', finalResults.technical);
-      console.log('WISCAR scores:', finalResults.wiscar);
-      console.log('Overall score:', finalResults.overallScore);
-      console.log('Recommendation:', finalResults.recommendation);
-      console.log('=== FINAL RESULTS END ===');
 
-      console.log('Final results:', JSON.stringify(finalResults, null, 2));
 
       return finalResults;
     } catch (error) {
@@ -824,15 +656,12 @@ class AssessmentService {
 
   // Calculate question score
   calculateQuestionScore(question, answerValue) {
-    console.log(`Calculating score for question ${question.id}:`, { type: question.type, answerValue, question });
-    
     switch (question.type) {
       case 'multiple-choice':
       case 'multipleChoice':
         const option = question.options.find(opt => opt.value === answerValue);
         const score = option ? (option.score || option.value || 0) : 0;
         const maxScore = Math.max(...question.options.map(opt => opt.score || opt.value || 0));
-        console.log(`Multiple choice score: ${score}/${maxScore}`);
         return {
           score: score,
           maxScore: maxScore
@@ -843,14 +672,12 @@ class AssessmentService {
         if (question.scale && question.scale.min !== undefined && question.scale.max !== undefined) {
           // Normalize the answer to 0-100 scale
           const normalizedValue = ((answerValue - question.scale.min) / (question.scale.max - question.scale.min)) * 100;
-          console.log(`Likert score: ${answerValue} -> ${normalizedValue}% (scale: ${question.scale.min}-${question.scale.max})`);
           return {
             score: normalizedValue,
             maxScore: 100
           };
         }
         // Fallback for likert without scale
-        console.log(`Likert fallback score: ${answerValue} -> ${answerValue * 20}%`);
         return {
           score: answerValue * 20, // Assume 1-5 scale, convert to percentage
           maxScore: 100
@@ -859,13 +686,11 @@ class AssessmentService {
       case 'slider':
         if (question.scale && question.scale.min !== undefined && question.scale.max !== undefined) {
           const normalizedValue = ((answerValue - question.scale.min) / (question.scale.max - question.scale.min)) * 100;
-          console.log(`Slider score: ${answerValue} -> ${normalizedValue}% (scale: ${question.scale.min}-${question.scale.max})`);
           return {
             score: normalizedValue,
             maxScore: 100
           };
         }
-        console.log(`Slider fallback score: ${answerValue} -> ${answerValue}%`);
         return {
           score: answerValue,
           maxScore: 100
@@ -873,7 +698,6 @@ class AssessmentService {
       
       case 'boolean':
         const boolScore = answerValue ? 100 : 0;
-        console.log(`Boolean score: ${answerValue} -> ${boolScore}%`);
         return {
           score: boolScore,
           maxScore: 100
@@ -882,14 +706,12 @@ class AssessmentService {
       case 'text':
         // For text questions, give a default score based on whether there's content
         const textScore = answerValue && answerValue.trim().length > 0 ? 75 : 0;
-        console.log(`Text score: ${answerValue ? 'has content' : 'empty'} -> ${textScore}%`);
         return {
           score: textScore,
           maxScore: 100
         };
       
       default:
-        console.log(`Default score: ${answerValue} -> 0%`);
         return {
           score: 0,
           maxScore: 100
@@ -899,12 +721,7 @@ class AssessmentService {
 
   // Calculate WISCAR overall score
   calculateWISCARScores(section, answers) {
-    console.log('=== WISCAR CALCULATION START ===');
-    console.log('Section questions:', section.questions?.length || 0);
-    console.log('Section answers:', answers?.length || 0);
-    
     if (answers.length === 0) {
-      console.log('No answers provided for WISCAR section');
       return { 
         overall: 0,
         dimensions: {
@@ -943,9 +760,7 @@ class AssessmentService {
       realWorld: this.calculateWISCARDimension(section, answers, 'realWorld')
     };
     
-    console.log('Overall WISCAR score:', overall);
-    console.log('WISCAR dimensions:', dimensions);
-    console.log('=== WISCAR CALCULATION END ===');
+
 
     return { 
       overall,
@@ -967,10 +782,6 @@ class AssessmentService {
     
     const targetCategories = dimensionMapping[dimension] || [dimension];
     
-    console.log(`Looking for WISCAR dimension: ${dimension}`);
-    console.log(`Target categories:`, targetCategories);
-    console.log(`Available question categories:`, [...new Set(section.questions.map(q => q.category))]);
-    
     const dimensionQuestions = section.questions.filter(q => 
       targetCategories.some(target => 
         q.category === target || 
@@ -979,11 +790,7 @@ class AssessmentService {
       )
     );
     
-    console.log(`Found ${dimensionQuestions.length} questions for dimension ${dimension}:`, dimensionQuestions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
-    
     if (dimensionQuestions.length === 0) {
-      console.log(`No questions found for WISCAR dimension: ${dimension}`);
-      console.log('Available categories:', [...new Set(section.questions.map(q => q.category))]);
       return 0;
     }
     
@@ -993,26 +800,21 @@ class AssessmentService {
     for (const question of dimensionQuestions) {
       const answer = answers.find(a => a.questionId === question.id);
       if (!answer) {
-        console.log(`No answer found for question ${question.id}`);
         continue;
       }
       
       const score = this.calculateQuestionScore(question, answer.value);
-      console.log(`Question ${question.id} score: ${score.score}/${score.maxScore}`);
       totalScore += score.score;
       maxPossibleScore += score.maxScore;
     }
     
     const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
-    console.log(`WISCAR dimension ${dimension}: ${result}% (${dimensionQuestions.length} questions, total: ${totalScore}/${maxPossibleScore})`);
     
     return result;
   }
 
   // Calculate psychometric scores
   calculatePsychometricScores(section, answers) {
-    console.log('=== PSYCHOMETRIC CALCULATION START ===');
-    
     if (answers.length === 0) {
       return {
         overall: 0,
@@ -1050,9 +852,7 @@ class AssessmentService {
       growth: 75 // Default growth mindset score
     };
     
-    console.log('Overall psychometric score:', overall);
-    console.log('Psychometric categories:', categories);
-    console.log('=== PSYCHOMETRIC CALCULATION END ===');
+
 
     return {
       overall,
@@ -1072,10 +872,6 @@ class AssessmentService {
     
     const targetCategories = categoryMapping[category] || [category];
     
-    console.log(`Looking for psychometric category: ${category}`);
-    console.log(`Target categories:`, targetCategories);
-    console.log(`Available question categories:`, [...new Set(section.questions.map(q => q.category))]);
-    
     const categoryQuestions = section.questions.filter(q => 
       targetCategories.some(target => 
         q.category === target || 
@@ -1084,11 +880,7 @@ class AssessmentService {
       )
     );
     
-    console.log(`Found ${categoryQuestions.length} questions for category ${category}:`, categoryQuestions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
-    
     if (categoryQuestions.length === 0) {
-      console.log(`No questions found for psychometric category: ${category}`);
-      console.log('Available categories:', [...new Set(section.questions.map(q => q.category))]);
       return 0;
     }
     
@@ -1098,26 +890,21 @@ class AssessmentService {
     for (const question of categoryQuestions) {
       const answer = answers.find(a => a.questionId === question.id);
       if (!answer) {
-        console.log(`No answer found for question ${question.id}`);
         continue;
       }
       
       const score = this.calculateQuestionScore(question, answer.value);
-      console.log(`Question ${question.id} score: ${score.score}/${score.maxScore}`);
       totalScore += score.score;
       maxPossibleScore += score.maxScore;
     }
     
     const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
-    console.log(`Psychometric category ${category}: ${result}% (${categoryQuestions.length} questions, total: ${totalScore}/${maxPossibleScore})`);
     
     return result;
   }
 
   // Calculate technical scores
   calculateTechnicalScores(section, answers) {
-    console.log('=== TECHNICAL CALCULATION START ===');
-    
     if (answers.length === 0) {
       return {
         overall: 0,
@@ -1161,10 +948,7 @@ class AssessmentService {
       problemSolving: this.calculateTechnicalCategory(section, answers, 'problem')
     };
     
-    console.log('Overall technical score:', overall);
-    console.log('Technical categories:', categories);
-    console.log('Correct answers:', correctAnswers, 'out of', section.questions.length);
-    console.log('=== TECHNICAL CALCULATION END ===');
+
 
     return {
       overall,
@@ -1186,10 +970,6 @@ class AssessmentService {
     
     const targetCategories = categoryMapping[category] || [category];
     
-    console.log(`Looking for technical category: ${category}`);
-    console.log(`Target categories:`, targetCategories);
-    console.log(`Available question categories:`, [...new Set(section.questions.map(q => q.category))]);
-    
     const categoryQuestions = section.questions.filter(q => 
       targetCategories.some(target => 
         q.category === target || 
@@ -1198,11 +978,7 @@ class AssessmentService {
       )
     );
     
-    console.log(`Found ${categoryQuestions.length} questions for category ${category}:`, categoryQuestions.map(q => ({ id: q.id, category: q.category, subcategory: q.subcategory })));
-    
     if (categoryQuestions.length === 0) {
-      console.log(`No questions found for technical category: ${category}`);
-      console.log('Available categories:', [...new Set(section.questions.map(q => q.category))]);
       return 0;
     }
     
@@ -1212,18 +988,15 @@ class AssessmentService {
     for (const question of categoryQuestions) {
       const answer = answers.find(a => a.questionId === question.id);
       if (!answer) {
-        console.log(`No answer found for question ${question.id}`);
         continue;
       }
       
       const score = this.calculateQuestionScore(question, answer.value);
-      console.log(`Question ${question.id} score: ${score.score}/${score.maxScore}`);
       totalScore += score.score;
       maxPossibleScore += score.maxScore;
     }
     
     const result = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
-    console.log(`Technical category ${category}: ${result}% (${categoryQuestions.length} questions, total: ${totalScore}/${maxPossibleScore})`);
     
     return result;
   }
