@@ -30,7 +30,8 @@ class UserService {
       user.currentAssessment = {
         assessmentId: assessmentData.assessmentId,
         assessmentTitle: assessmentData.assessmentTitle,
-        startedAt: new Date()
+        startedAt: new Date(),
+        isCompleted: false
       };
 
       await user.save();
@@ -50,21 +51,14 @@ class UserService {
       }
 
       if (user.currentAssessment && user.currentAssessment.assessmentId === assessmentId) {
-        // Move current assessment to completed assessments
-        const completedAssessment = {
-          assessmentId: user.currentAssessment.assessmentId,
-          assessmentTitle: user.currentAssessment.assessmentTitle,
-          startedAt: user.currentAssessment.startedAt,
-          completedAt: new Date(),
-          feedback: {
-            rating: feedback.rating,
-            comments: feedback.comments,
-            submittedAt: new Date()
-          }
+        // Mark assessment as completed and save feedback
+        user.currentAssessment.isCompleted = true;
+        user.currentAssessment.feedback = {
+          rating: feedback.rating,
+          comments: feedback.comments,
+          submittedAt: new Date()
         };
 
-        user.completedAssessments.push(completedAssessment);
-        user.currentAssessment = null; // Clear current assessment
         await user.save();
       }
 
@@ -73,22 +67,7 @@ class UserService {
       console.error('Error completing assessment:', error);
       throw error;
     }
-  }
-
-  // Get user's completed assessments
-  async getCompletedAssessments(userId) {
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      return user.completedAssessments || [];
-    } catch (error) {
-      console.error('Error getting completed assessments:', error);
-      throw error;
     }
-  }
 
   // Get user by email (deprecated)
   async getUserByEmail() {

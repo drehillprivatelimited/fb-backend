@@ -12,18 +12,15 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: ['11-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+']
   },
-  // Simple assessment tracking - only what you need
+  // Simple assessment tracking - just what you need
   currentAssessment: {
     assessmentId: String,
     assessmentTitle: String,
-    startedAt: Date
-  },
-  // Only store completed assessments with feedback
-  completedAssessments: [{
-    assessmentId: String,
-    assessmentTitle: String,
     startedAt: Date,
-    completedAt: Date,
+    isCompleted: {
+      type: Boolean,
+      default: false
+    },
     feedback: {
       rating: {
         type: Number,
@@ -33,7 +30,7 @@ const userSchema = new mongoose.Schema({
       comments: String,
       submittedAt: Date
     }
-  }],
+  },
   createdAt: {
     type: Date,
     default: Date.now

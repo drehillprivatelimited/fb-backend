@@ -118,7 +118,9 @@ router.get('/age-range/:ageRange', async (req, res) => {
         country: user.country,
         createdAt: user.createdAt,
         currentAssessment: user.currentAssessment,
-        totalAssessments: user.completedAssessments?.length || 0
+        assessmentStatus: user.currentAssessment ? 
+          (user.currentAssessment.isCompleted ? 'Completed' : 'In Progress') : 
+          'No Assessment'
       }))
     });
   } catch (error) {
@@ -184,7 +186,7 @@ router.post('/:id/complete-assessment', async (req, res) => {
     
     res.json({
       message: 'Assessment completed successfully',
-      completedAssessments: user.completedAssessments
+      currentAssessment: user.currentAssessment
     });
   } catch (error) {
     console.error('Error completing assessment:', error);
@@ -201,29 +203,32 @@ router.post('/:id/complete-assessment', async (req, res) => {
   }
 });
 
-// Get user's completed assessments
-router.get('/:id/completed-assessments', async (req, res) => {
-  console.log(`GET /api/users/${req.params.id}/completed-assessments - Getting completed assessments`);
+// Get user's current assessment status
+router.get('/:id/assessment-status', async (req, res) => {
+  console.log(`GET /api/users/${req.params.id}/assessment-status - Getting assessment status`);
   try {
     const { id } = req.params;
-    const completedAssessments = await userService.getCompletedAssessments(id);
+    const user = await userService.getUserById(id);
+    
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found'
+      });
+    }
     
     res.json({
       userId: id,
-      completedAssessments
+      currentAssessment: user.currentAssessment,
+      status: user.currentAssessment ? 
+        (user.currentAssessment.isCompleted ? 'Completed' : 'In Progress') : 
+        'No Assessment'
     });
   } catch (error) {
-    console.error('Error getting completed assessments:', error);
-    if (error.message === 'User not found') {
-      res.status(404).json({
-        message: 'User not found'
-      });
-    } else {
-      res.status(500).json({
-        message: 'Error getting completed assessments',
-        error: error.message
-      });
-    }
+    console.error('Error getting assessment status:', error);
+    res.status(500).json({
+      message: 'Error getting assessment status',
+      error: error.message
+    });
   }
 });
 
