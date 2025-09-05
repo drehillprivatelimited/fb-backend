@@ -39,9 +39,9 @@ async function testScaleOptions() {
       });
     }
 
-    // Test WISCAR section
+    // Test FB6 Index section
     if (assessment.sections.wiscar) {
-      console.log('\nWISCAR Section Questions:');
+      console.log('\nFB6 Index Section Questions:');
       assessment.sections.wiscar.questions.forEach((question, index) => {
         console.log(`\nQuestion ${index + 1}: ${question.text}`);
         console.log(`Type: ${question.type}`);

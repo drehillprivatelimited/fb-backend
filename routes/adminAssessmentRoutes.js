@@ -66,7 +66,7 @@ router.get('/:id', verifyAdmin, async (req, res) => {
           questions: []
         },
         wiscar: {
-          title: 'WISCAR Analysis',
+          title: 'FB6 Index Analysis',
           description: 'Comprehensive evaluation across 6 key dimensions',
           type: 'wiscar',
           weight: 25,
@@ -217,7 +217,7 @@ router.post('/', verifyAdmin, async (req, res) => {
           questions: []
         },
         wiscar: {
-          title: 'WISCAR Analysis',
+          title: 'FB6 Index Analysis',
           description: 'Comprehensive evaluation across 6 key dimensions',
           type: 'wiscar',
           weight: 25,

@@ -35,7 +35,7 @@ const sampleAssessment = {
     'Continuous learning mindset'
   ],
   assessmentOverview: {
-    modules: ['Psychological Fit', 'Technical Aptitude', 'WISCAR Analysis'],
+    modules: ['Psychological Fit', 'Technical Aptitude', 'FB6 Index Analysis'],
     resultsInclude: ['Career Recommendations', 'Skill Gap Analysis', 'Learning Path']
   },
   sections: {
@@ -160,7 +160,7 @@ const sampleAssessment = {
       }
     },
     wiscar: {
-      title: 'WISCAR Analysis',
+      title: 'FB6 Index Analysis',
       description: 'Comprehensive evaluation across 6 key dimensions',
       type: 'wiscar',
       weight: 25,

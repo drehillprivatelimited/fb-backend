@@ -237,7 +237,7 @@ const assessmentSchema = new mongoose.Schema({
     wiscar: {
       title: {
         type: String,
-        default: 'WISCAR Analysis'
+        default: 'FB6 Index Analysis'
       },
       description: {
         type: String,
