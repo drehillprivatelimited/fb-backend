@@ -91,7 +91,7 @@ app.get('/api/status', (req, res) => {
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    message: 'Path Finder Backend API',
+    message: 'FactorBeam Backend API',
     version: '1.0.0',
     status: 'Running',
     timestamp: new Date().toISOString(),
