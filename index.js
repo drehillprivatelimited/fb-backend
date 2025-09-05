@@ -32,7 +32,7 @@ const PORT = process.env.PORT || 5000;
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:5173', 'https://lakxa.in', 'http://lakxa.in','https://path-finder-v1.vercel.app'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:5173','https://path-finder-v1.vercel.app', 'https://factorbeam.com', 'http://factorbeam.com'];
 
 // Middleware
 app.use(cors({
