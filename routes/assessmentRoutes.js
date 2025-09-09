@@ -23,7 +23,15 @@ router.get('/category/:category', async (req, res) => {
   console.log(`GET /api/assessments/category/${req.params.category} - Fetching assessments by category`);
   try {
     const { category } = req.params;
-    const assessments = await assessmentService.getAssessmentsByCategory(category);
+    
+    // Convert slug back to category name
+    const slugToCategoryMap = {
+      'emerging-technologies': 'Emerging Technologies',
+      'engineering-manufacturing': 'Engineering & Manufacturing'
+    };
+    
+    const categoryName = slugToCategoryMap[category] || category;
+    const assessments = await assessmentService.getAssessmentsByCategory(categoryName);
     res.json(assessments);
   } catch (error) {
     console.error('Error fetching assessments by category:', error);
