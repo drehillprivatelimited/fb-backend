@@ -57,6 +57,37 @@ router.get('/featured', async (req, res) => {
   }
 });
 
+// Get specific assessment by category + id (new nested path support)
+router.get('/category/:category/:assessmentId', async (req, res) => {
+  const { category, assessmentId } = req.params;
+  console.log(`GET /api/assessments/category/${category}/${assessmentId} - Fetching assessment by category and id`);
+  try {
+    // Optional: normalize/validate category slug → proper category name
+    const slugToCategoryMap = {
+      'emerging-technologies': 'Emerging Technologies',
+      'engineering-manufacturing': 'Engineering & Manufacturing'
+    };
+    const expectedCategoryName = slugToCategoryMap[category] || category;
+
+    // Fetch by id first (source of truth)
+    const assessment = await assessmentService.getAssessmentById(assessmentId);
+    if (!assessment) {
+      return res.status(404).json({ message: 'Assessment not found' });
+    }
+
+    // If a recognized category was provided, ensure it matches the document
+    if (expectedCategoryName && assessment.category && assessment.category !== expectedCategoryName) {
+      return res.status(400).json({ message: 'Category does not match assessment' });
+    }
+
+    return res.json(assessment);
+  } catch (error) {
+    console.error('Error fetching assessment by category and id:', error);
+    const message = error.message === 'Assessment not found' ? 'Assessment not found' : 'Error fetching assessment';
+    return res.status(error.message === 'Assessment not found' ? 404 : 500).json({ message, error: error.message });
+  }
+});
+
 // Get specific assessment with sections
 router.get('/:assessmentId', async (req, res) => {
   console.log(`GET /api/assessments/${req.params.assessmentId} - Fetching assessment`);
