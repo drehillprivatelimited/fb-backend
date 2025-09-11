@@ -7,12 +7,12 @@ const router = express.Router();
 router.post('/', async (req, res) => {
   console.log('POST /api/users - Creating/updating user');
   try {
-    const { country, ageRange } = req.body;
+    const { gender, ageRange } = req.body;
 
     // Validate required fields
-    if (!country || !ageRange) {
+    if (!gender || !ageRange) {
       return res.status(400).json({
-        message: 'Country and age range are required'
+        message: 'Gender and age range are required'
       });
     }
 
@@ -24,13 +24,13 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const user = await userService.createOrUpdateUser({ country, ageRange });
+    const user = await userService.createOrUpdateUser({ gender, ageRange });
     
     res.status(201).json({
       message: 'User created/updated successfully',
       user: {
         id: user._id,
-        country: user.country,
+        gender: user.gender,
         ageRange: user.ageRange,
         createdAt: user.createdAt
       }
@@ -65,7 +65,7 @@ router.get('/:id', async (req, res) => {
     res.json({
       user: {
         id: user._id,
-        country: user.country,
+        gender: user.gender,
         ageRange: user.ageRange,
         createdAt: user.createdAt,
 
@@ -115,7 +115,7 @@ router.get('/age-range/:ageRange', async (req, res) => {
       count: users.length,
       users: users.map(user => ({
         id: user._id,
-        country: user.country,
+        gender: user.gender,
         createdAt: user.createdAt,
         currentAssessment: user.currentAssessment,
         assessmentStatus: user.currentAssessment ? 

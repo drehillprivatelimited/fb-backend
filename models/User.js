@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-  country: {
+  gender: {
     type: String,
     required: true,
-    default: 'India',
+    enum: ['Male', 'Female', 'Other'],
     trim: true
   },
   ageRange: {

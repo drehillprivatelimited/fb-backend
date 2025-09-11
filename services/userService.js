@@ -4,11 +4,11 @@ class UserService {
   // Create or update user
   async createOrUpdateUser(userData) {
     try {
-      const { country, ageRange } = userData;
+      const { gender, ageRange } = userData;
 
       // Always create a new user since email is no longer used as identifier
       const user = new User({
-        country,
+        gender,
         ageRange
       });
       await user.save();
