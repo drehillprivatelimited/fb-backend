@@ -105,7 +105,8 @@ const assessmentSchema = new mongoose.Schema({
       'Customer Success & Support',
       'Education & Training',
       'Green & Sustainability',
-      'Legal, Compliance & Governance'
+      'Legal, Compliance & Governance',
+      'Cognitive & Learning Intelligence'
     ]
   },
   duration: {
