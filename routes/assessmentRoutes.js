@@ -27,7 +27,8 @@ router.get('/category/:category', async (req, res) => {
     // Convert slug back to category name
     const slugToCategoryMap = {
       'emerging-technologies': 'Emerging Technologies',
-      'engineering-manufacturing': 'Engineering & Manufacturing'
+      'engineering-manufacturing': 'Engineering & Manufacturing',
+      'cognitive-learning-intelligence': 'Cognitive & Learning Intelligence'
     };
     
     const categoryName = slugToCategoryMap[category] || category;
@@ -65,7 +66,8 @@ router.get('/category/:category/:assessmentId', async (req, res) => {
     // Optional: normalize/validate category slug → proper category name
     const slugToCategoryMap = {
       'emerging-technologies': 'Emerging Technologies',
-      'engineering-manufacturing': 'Engineering & Manufacturing'
+      'engineering-manufacturing': 'Engineering & Manufacturing',
+      'cognitive-learning-intelligence': 'Cognitive & Learning Intelligence'
     };
     const expectedCategoryName = slugToCategoryMap[category] || category;
 
@@ -124,7 +126,8 @@ router.get('/categories/list', async (req, res) => {
   try {
     const categories = [
       'Emerging Technologies',
-      'Engineering & Manufacturing'
+      'Engineering & Manufacturing',
+      'Cognitive & Learning Intelligence'
     ];
     res.json(categories);
   } catch (error) {
@@ -150,7 +153,8 @@ router.get('/health/status', async (req, res) => {
       featuredAssessments: featuredAssessments.length,
       categories: [
         'Emerging Technologies',
-        'Engineering & Manufacturing'
+        'Engineering & Manufacturing',
+        'Cognitive & Learning Intelligence'
       ]
     });
   } catch (error) {
