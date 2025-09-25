@@ -108,7 +108,7 @@ router.post('/test', verifyAdmin, async (req, res) => {
       id: req.body.id || `test-${Date.now()}`,
       title: req.body.title || 'Test Assessment',
       description: req.body.description || 'Test Description',
-      category: req.body.category || 'Technology'
+      category: req.body.category || 'General'
     };
     
     console.log('Test assessment data:', JSON.stringify(assessmentData, null, 2));

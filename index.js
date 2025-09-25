@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
 import adminAssessmentRoutes from './routes/adminAssessmentRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 
 // Import middleware
 import { verifyAdmin } from './middleware/authMiddleware.js';
@@ -76,6 +77,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/assessments', assessmentRoutes);
 app.use('/api/admin/assessments', adminAssessmentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Health check endpoint
 app.get('/api/status', (req, res) => {

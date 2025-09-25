@@ -90,24 +90,7 @@ const assessmentSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: [
-      'Technology',
-      'Business & Strategy', 
-      'Design & Experience',
-      'Healthcare & Life Sciences',
-      'Engineering & Manufacturing',
-      'Security & Risk',
-      'Data & Analytics',
-      'Digital Marketing & Content',
-      'Product & Innovation',
-      'Cloud & Infrastructure',
-      'Emerging Technologies',
-      'Customer Success & Support',
-      'Education & Training',
-      'Green & Sustainability',
-      'Legal, Compliance & Governance',
-      'Cognitive & Learning Intelligence'
-    ]
+    trim: true
   },
   duration: {
     type: String,

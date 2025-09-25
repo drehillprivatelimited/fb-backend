@@ -1,5 +1,6 @@
 import express from 'express';
 import assessmentService from '../services/assessmentService.js';
+import Category from '../models/Category.js';
 
 const router = express.Router();
 
@@ -24,15 +25,8 @@ router.get('/category/:category', async (req, res) => {
   try {
     const { category } = req.params;
     
-    // Convert slug back to category name
-    const slugToCategoryMap = {
-      'emerging-technologies': 'Emerging Technologies',
-      'engineering-manufacturing': 'Engineering & Manufacturing',
-      'cognitive-learning-intelligence': 'Cognitive & Learning Intelligence',
-      'personal-emotional-intelligence': 'Personal and emotional intelligence'
-    };
-    
-    const categoryName = slugToCategoryMap[category] || category;
+    // Use category slug directly - no hardcoded mapping needed
+    const categoryName = category;
     const assessments = await assessmentService.getAssessmentsByCategory(categoryName);
     res.json(assessments);
   } catch (error) {
@@ -64,14 +58,8 @@ router.get('/category/:category/:assessmentId', async (req, res) => {
   const { category, assessmentId } = req.params;
   console.log(`GET /api/assessments/category/${category}/${assessmentId} - Fetching assessment by category and id`);
   try {
-    // Optional: normalize/validate category slug → proper category name
-    const slugToCategoryMap = {
-      'emerging-technologies': 'Emerging Technologies',
-      'engineering-manufacturing': 'Engineering & Manufacturing',
-      'cognitive-learning-intelligence': 'Cognitive & Learning Intelligence',
-      'personal-emotional-intelligence': 'Personal and emotional intelligence'
-    };
-    const expectedCategoryName = slugToCategoryMap[category] || category;
+    // Use category slug directly - no hardcoded mapping needed
+    const expectedCategoryName = category;
 
     // Fetch by id first (source of truth)
     const assessment = await assessmentService.getAssessmentById(assessmentId);
@@ -122,17 +110,17 @@ router.get('/:assessmentId', async (req, res) => {
 
 
 
-// Get assessment categories
+// Get assessment categories dynamically from database
 router.get('/categories/list', async (req, res) => {
   console.log('GET /api/assessments/categories/list - Fetching assessment categories');
   try {
-    const categories = [
-      'Emerging Technologies',
-      'Engineering & Manufacturing',
-      'Cognitive & Learning Intelligence',
-      'Personal and emotional intelligence'
-    ];
-    res.json(categories);
+    // Use imported Category model
+    
+    // Get categories from Category collection
+    const categories = await Category.find({ isActive: true }).select('name').lean();
+    const categoryNames = categories.map(cat => cat.name);
+    
+    res.json(categoryNames);
   } catch (error) {
     console.error('Error fetching assessment categories:', error);
     res.status(500).json({ 
@@ -149,17 +137,16 @@ router.get('/health/status', async (req, res) => {
     const totalAssessments = await assessmentService.getAllAssessments();
     const featuredAssessments = await assessmentService.getFeaturedAssessments();
     
+    // Get categories from Category collection
+    const categories = await Category.find({ isActive: true }).select('name').lean();
+    const categoryNames = categories.map(cat => cat.name);
+    
     res.json({
       status: 'OK',
       timestamp: new Date().toISOString(),
       totalAssessments: totalAssessments.length,
       featuredAssessments: featuredAssessments.length,
-      categories: [
-        'Emerging Technologies',
-        'Engineering & Manufacturing',
-        'Cognitive & Learning Intelligence',
-        'Personal and emotional intelligence'
-      ]
+      categories: categoryNames
     });
   } catch (error) {
     console.error('Error in assessment health check:', error);
