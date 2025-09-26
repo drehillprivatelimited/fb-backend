@@ -25,8 +25,13 @@ router.get('/category/:category', async (req, res) => {
   try {
     const { category } = req.params;
     
-    // Use category slug directly - no hardcoded mapping needed
-    const categoryName = category;
+    // Convert slug to category name (e.g., "engineering-manufacturing" -> "Engineering Manufacturing")
+    const categoryName = category
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    
+    console.log(`Converted slug "${category}" to category name "${categoryName}"`);
     const assessments = await assessmentService.getAssessmentsByCategory(categoryName);
     res.json(assessments);
   } catch (error) {
@@ -58,8 +63,11 @@ router.get('/category/:category/:assessmentId', async (req, res) => {
   const { category, assessmentId } = req.params;
   console.log(`GET /api/assessments/category/${category}/${assessmentId} - Fetching assessment by category and id`);
   try {
-    // Use category slug directly - no hardcoded mapping needed
-    const expectedCategoryName = category;
+    // Convert slug to category name (e.g., "engineering-manufacturing" -> "Engineering Manufacturing")
+    const expectedCategoryName = category
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
 
     // Fetch by id first (source of truth)
     const assessment = await assessmentService.getAssessmentById(assessmentId);
