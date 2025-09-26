@@ -25,10 +25,16 @@ router.get('/category/:category', async (req, res) => {
   try {
     const { category } = req.params;
     
-    // Convert slug to category name (e.g., "engineering-manufacturing" -> "Engineering Manufacturing")
+    // Convert slug to category name (e.g., "engineering-and-manufacturing" -> "Engineering & Manufacturing")
     const categoryName = category
       .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map(word => {
+        // Handle special case for 'and' -> '&'
+        if (word.toLowerCase() === 'and') {
+          return '&';
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
       .join(' ');
     
     console.log(`Converted slug "${category}" to category name "${categoryName}"`);
@@ -63,10 +69,16 @@ router.get('/category/:category/:assessmentId', async (req, res) => {
   const { category, assessmentId } = req.params;
   console.log(`GET /api/assessments/category/${category}/${assessmentId} - Fetching assessment by category and id`);
   try {
-    // Convert slug to category name (e.g., "engineering-manufacturing" -> "Engineering Manufacturing")
+    // Convert slug to category name (e.g., "engineering-and-manufacturing" -> "Engineering & Manufacturing")
     const expectedCategoryName = category
       .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map(word => {
+        // Handle special case for 'and' -> '&'
+        if (word.toLowerCase() === 'and') {
+          return '&';
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
       .join(' ');
 
     // Fetch by id first (source of truth)
