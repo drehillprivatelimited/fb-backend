@@ -327,7 +327,9 @@ router.post('/posts', verifyAdmin, async (req, res) => {
         await sendBlogPostNotification({
           title: post.title,
           excerpt: post.excerpt,
-          author: post.author
+          author: post.author,
+          slug: post.slug,
+          url: `${process.env.FRONTEND_URL || 'https://factorbeam.com'}/blog/${post.slug}`
         });
         
         // Send notification to all subscribers
@@ -425,7 +427,9 @@ router.put('/posts/:id', verifyAdmin, async (req, res) => {
         await sendBlogPostNotification({
           title: post.title,
           excerpt: post.excerpt,
-          author: post.author
+          author: post.author,
+          slug: post.slug,
+          url: `${process.env.FRONTEND_URL || 'https://factorbeam.com'}/blog/${post.slug}`
         });
         
         // Send notification to all subscribers

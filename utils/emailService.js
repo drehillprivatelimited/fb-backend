@@ -102,8 +102,11 @@ export const sendNewsletter = async ({ to, subject, content }) => {
 };
 
 // Send admin notification for new blog post
-export const sendBlogPostNotification = async ({ title, excerpt, author }) => {
+export const sendBlogPostNotification = async ({ title, excerpt, author, slug, url }) => {
   try {
+    // Create the blog post URL
+    const blogPostUrl = url || `${process.env.FRONTEND_URL || 'https://factorbeam.com'}/blog/${slug}`;
+    
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
@@ -114,6 +117,12 @@ export const sendBlogPostNotification = async ({ title, excerpt, author }) => {
         <p><strong>Author:</strong> ${author}</p>
         <p><strong>Excerpt:</strong></p>
         <p style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">${excerpt}</p>
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${blogPostUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">View Blog Post</a>
+        </div>
+        <p style="color: #666; font-size: 12px; word-break: break-all;">
+          <strong>Direct Link:</strong> <a href="${blogPostUrl}">${blogPostUrl}</a>
+        </p>
         <hr>
         <p style="color: #666; font-size: 12px;">This notification was sent automatically when a new blog post was published on Factor Beam.</p>
       `
