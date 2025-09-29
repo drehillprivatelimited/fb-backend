@@ -2,6 +2,7 @@ import express from 'express';
 import BlogPost from '../models/BlogPost.js';
 import { verifyAdmin } from '../middleware/authMiddleware.js';
 import { upload, handleMulterError } from '../config/fileStorage.js';
+import { sendBlogPostNotification } from '../utils/emailService.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -318,6 +319,44 @@ router.post('/posts', verifyAdmin, async (req, res) => {
 
     await post.save();
     console.log('Post created successfully:', post.title);
+    
+    // Send notification to subscribers if post is published
+    if (isPublished) {
+      try {
+        // Send notification to admin
+        await sendBlogPostNotification({
+          title: post.title,
+          excerpt: post.excerpt,
+          author: post.author
+        });
+        
+        // Send notification to all subscribers
+        const fetch = require('node-fetch');
+        const notificationResponse = await fetch(`${process.env.BACKEND_URL || 'http://localhost:5000'}/api/subscribers/notify-blog-post`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: post.title,
+            excerpt: post.excerpt,
+            author: post.author,
+            slug: post.slug,
+            url: `${process.env.FRONTEND_URL || 'https://factorbeam.com'}/blog/${post.slug}`
+          }),
+        });
+        
+        if (notificationResponse.ok) {
+          console.log('Blog post notifications sent to subscribers');
+        } else {
+          console.error('Failed to send notifications to subscribers');
+        }
+      } catch (notificationError) {
+        console.error('Error sending blog post notifications:', notificationError);
+        // Don't fail the post creation if notifications fail
+      }
+    }
+    
     res.status(201).json(post);
   } catch (error) {
     console.error('Error creating post:', error);
@@ -378,6 +417,44 @@ router.put('/posts/:id', verifyAdmin, async (req, res) => {
 
     await post.save();
     console.log('Post updated successfully:', post.title);
+    
+    // Send notification to subscribers if post is being published
+    if (isPublished && post.publishedAt) {
+      try {
+        // Send notification to admin
+        await sendBlogPostNotification({
+          title: post.title,
+          excerpt: post.excerpt,
+          author: post.author
+        });
+        
+        // Send notification to all subscribers
+        const fetch = require('node-fetch');
+        const notificationResponse = await fetch(`${process.env.BACKEND_URL || 'http://localhost:5000'}/api/subscribers/notify-blog-post`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: post.title,
+            excerpt: post.excerpt,
+            author: post.author,
+            slug: post.slug,
+            url: `${process.env.FRONTEND_URL || 'https://factorbeam.com'}/blog/${post.slug}`
+          }),
+        });
+        
+        if (notificationResponse.ok) {
+          console.log('Blog post notifications sent to subscribers');
+        } else {
+          console.error('Failed to send notifications to subscribers');
+        }
+      } catch (notificationError) {
+        console.error('Error sending blog post notifications:', notificationError);
+        // Don't fail the post update if notifications fail
+      }
+    }
+    
     res.json(post);
   } catch (error) {
     console.error('Error updating post:', error);

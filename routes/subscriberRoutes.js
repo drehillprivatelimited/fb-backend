@@ -1,6 +1,6 @@
 import express from 'express';
 import Subscriber from '../models/Subscriber.js';
-import { sendNewsletterConfirmation, sendNewsletter } from '../utils/emailService.js';
+import { sendNewsletterConfirmation, sendNewsletter, sendNewBlogPostToSubscribers } from '../utils/emailService.js';
 
 const router = express.Router();
 
@@ -158,6 +158,68 @@ router.post('/send-newsletter', async (req, res) => {
   } catch (error) {
     console.error('Error sending newsletter:', error);
     res.status(500).json({ message: 'Error sending newsletter' });
+  }
+});
+
+// Send new blog post notification to all subscribers
+router.post('/notify-blog-post', async (req, res) => {
+  try {
+    const { title, excerpt, author, slug, url } = req.body;
+    
+    if (!title || !excerpt || !author || !slug) {
+      return res.status(400).json({ message: 'Title, excerpt, author, and slug are required' });
+    }
+
+    // Get all subscribers
+    const subscribers = await Subscriber.find({});
+    
+    if (subscribers.length === 0) {
+      return res.status(404).json({ message: 'No subscribers found' });
+    }
+
+    // Create the blog post URL
+    const blogPostUrl = url || `${process.env.FRONTEND_URL || 'https://factorbeam.com'}/blog/${slug}`;
+
+    // Send notification to all subscribers
+    const emailPromises = subscribers.map(async (subscriber) => {
+      try {
+        const mailOptions = await sendNewBlogPostToSubscribers({
+          title,
+          excerpt,
+          author,
+          slug,
+          url: blogPostUrl
+        });
+        
+        // Update the 'to' field for each subscriber
+        mailOptions.to = subscriber.email;
+        
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransporter({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        
+        await transporter.sendMail(mailOptions);
+        console.log(`Blog post notification sent to: ${subscriber.email}`);
+      } catch (emailError) {
+        console.error(`Error sending to ${subscriber.email}:`, emailError);
+        // Continue with other subscribers even if one fails
+      }
+    });
+
+    await Promise.allSettled(emailPromises);
+    
+    res.status(200).json({ 
+      message: 'Blog post notification sent to all subscribers',
+      count: subscribers.length
+    });
+  } catch (error) {
+    console.error('Error sending blog post notifications:', error);
+    res.status(500).json({ message: 'Error sending blog post notifications' });
   }
 });
 
