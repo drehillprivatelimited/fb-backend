@@ -82,9 +82,11 @@ router.get('/categories', async (req, res) => {
 // Get a single public blog post by slug
 router.get('/posts/:slug/public', async (req, res) => {
   const { slug } = req.params;
+  console.log(`GET /api/blog/posts/${slug}/public - Fetching public post by slug`);
   try {
     const post = await BlogPost.findOne({ slug, isPublished: true });
     if (!post) {
+      console.log('Public post not found with slug:', slug);
       return res.status(404).json({ message: 'Post not found' });
     }
     
@@ -92,6 +94,39 @@ router.get('/posts/:slug/public', async (req, res) => {
     post.analytics.views += 1;
     await post.save();
     
+    console.log('Public post found:', post.title);
+    res.json(post);
+  } catch (error) {
+    console.error('Error fetching public post:', error);
+    res.status(500).json({ message: 'Error fetching blog post', error: error.message });
+  }
+});
+
+// Get a single public blog post by ID (for backward compatibility)
+router.get('/posts/:id/public', async (req, res) => {
+  const { id } = req.params;
+  console.log(`GET /api/blog/posts/${id}/public - Fetching public post by ID`);
+  try {
+    // First try to find by ID
+    let post = await BlogPost.findById(id);
+    
+    // If not found by ID, try to find by slug
+    if (!post) {
+      post = await BlogPost.findOne({ slug: id, isPublished: true });
+    } else if (!post.isPublished) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    
+    if (!post) {
+      console.log('Public post not found with ID/slug:', id);
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    
+    // Increment view count
+    post.analytics.views += 1;
+    await post.save();
+    
+    console.log('Public post found:', post.title);
     res.json(post);
   } catch (error) {
     console.error('Error fetching public post:', error);
@@ -204,14 +239,39 @@ router.get('/posts', verifyAdmin, async (req, res) => {
   }
 });
 
-// Get a single blog post by slug (admin)
-router.get('/posts/:slug', verifyAdmin, async (req, res) => {
-  const { slug } = req.params;
+// Get a single blog post by ID (admin)
+router.get('/posts/:id', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+  console.log(`GET /api/blog/posts/${id} - Fetching post by ID`);
   try {
-    const post = await BlogPost.findOne({ slug });
+    const post = await BlogPost.findById(id);
+    
     if (!post) {
+      console.log('Post not found with ID:', id);
       return res.status(404).json({ message: 'Post not found' });
     }
+    
+    console.log('Post found:', post.title);
+    res.json(post);
+  } catch (error) {
+    console.error('Error fetching post:', error);
+    res.status(500).json({ message: 'Error fetching blog post', error: error.message });
+  }
+});
+
+// Get a single blog post by slug (admin)
+router.get('/posts/slug/:slug', verifyAdmin, async (req, res) => {
+  const { slug } = req.params;
+  console.log(`GET /api/blog/posts/slug/${slug} - Fetching post by slug`);
+  try {
+    const post = await BlogPost.findOne({ slug });
+    
+    if (!post) {
+      console.log('Post not found with slug:', slug);
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    
+    console.log('Post found:', post.title);
     res.json(post);
   } catch (error) {
     console.error('Error fetching post:', error);
