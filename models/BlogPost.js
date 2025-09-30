@@ -31,6 +31,27 @@ const blogPostSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  contentBlocks: [{
+    id: {
+      type: String,
+      required: true
+    },
+    type: {
+      type: String,
+      enum: ['text', 'image'],
+      required: true
+    },
+    content: {
+      type: String,
+      required: true
+    },
+    imageUrl: String,
+    imageAlt: String,
+    order: {
+      type: Number,
+      required: true
+    }
+  }],
   excerpt: {
     type: String,
     required: true

@@ -287,6 +287,7 @@ router.post('/posts', verifyAdmin, async (req, res) => {
     const { 
       title, 
       content, 
+      contentBlocks,
       excerpt, 
       isPublished,
       category,
@@ -306,6 +307,7 @@ router.post('/posts', verifyAdmin, async (req, res) => {
     const post = new BlogPost({
       title,
       content,
+      contentBlocks: contentBlocks || [],
       excerpt,
       isPublished: isPublished || false,
       category: category || 'Career Guidance',
@@ -377,6 +379,7 @@ router.put('/posts/:id', verifyAdmin, async (req, res) => {
     const { 
       title, 
       content, 
+      contentBlocks,
       excerpt, 
       isPublished,
       category,
@@ -402,6 +405,7 @@ router.put('/posts/:id', verifyAdmin, async (req, res) => {
 
     post.title = title;
     post.content = content;
+    post.contentBlocks = contentBlocks || post.contentBlocks;
     post.excerpt = excerpt;
     post.isPublished = isPublished;
     post.category = category || post.category;
