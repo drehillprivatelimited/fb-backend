@@ -96,6 +96,8 @@ router.get('/posts/:slug/public', async (req, res) => {
     await post.save();
     
     console.log('Public post found:', post.title);
+    console.log('ContentBlocks in response:', post.contentBlocks);
+    console.log('ContentBlocks length:', post.contentBlocks?.length);
     res.json(post);
   } catch (error) {
     console.error('Error fetching public post:', error);
@@ -128,6 +130,8 @@ router.get('/posts/:id/public', async (req, res) => {
     await post.save();
     
     console.log('Public post found:', post.title);
+    console.log('ContentBlocks in response:', post.contentBlocks);
+    console.log('ContentBlocks length:', post.contentBlocks?.length);
     res.json(post);
   } catch (error) {
     console.error('Error fetching public post:', error);
