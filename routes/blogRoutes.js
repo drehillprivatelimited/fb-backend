@@ -283,6 +283,7 @@ router.get('/posts/slug/:slug', verifyAdmin, async (req, res) => {
 // Create a new blog post (admin)
 router.post('/posts', verifyAdmin, async (req, res) => {
   console.log('POST /api/blog/posts - Creating new post');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
   try {
     const { 
       title, 
@@ -302,6 +303,18 @@ router.post('/posts', verifyAdmin, async (req, res) => {
     if (!title || !content || !excerpt) {
       console.log('Missing required fields');
       return res.status(400).json({ message: 'Title, content, and excerpt are required' });
+    }
+
+    // Validate contentBlocks if provided
+    if (contentBlocks && Array.isArray(contentBlocks)) {
+      contentBlocks.forEach((block, index) => {
+        if (!block.id || !block.type || typeof block.order !== 'number') {
+          throw new Error(`Invalid contentBlock at index ${index}: missing required fields`);
+        }
+        if (!['text', 'image'].includes(block.type)) {
+          throw new Error(`Invalid contentBlock type at index ${index}: ${block.type}`);
+        }
+      });
     }
 
     const post = new BlogPost({
@@ -364,10 +377,20 @@ router.post('/posts', verifyAdmin, async (req, res) => {
     res.status(201).json(post);
   } catch (error) {
     console.error('Error creating post:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     if (error.code === 11000) {
       res.status(400).json({ message: 'A post with this title already exists' });
     } else {
-      res.status(500).json({ message: 'Error creating blog post', error: error.message });
+      res.status(500).json({ 
+        message: 'Error creating blog post', 
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   }
 });

@@ -43,7 +43,7 @@ const blogPostSchema = new mongoose.Schema({
     },
     content: {
       type: String,
-      required: true
+      default: ''
     },
     imageUrl: String,
     imageAlt: String,
