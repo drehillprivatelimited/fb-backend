@@ -37,7 +37,17 @@ router.get('/:id', verifyAdmin, async (req, res) => {
     // The assessment should have embedded sections
     if (assessmentData.sections) {
       console.log('Assessment has embedded sections:', Object.keys(assessmentData.sections));
-      res.json(assessmentData);
+      
+      // Convert Map to object for JSON response if needed
+      let sectionsData = assessmentData.sections;
+      if (assessmentData.sections instanceof Map) {
+        sectionsData = Object.fromEntries(assessmentData.sections);
+      }
+      
+      res.json({
+        ...assessmentData.toObject(),
+        sections: sectionsData
+      });
     } else {
       // If no embedded sections, return assessment with default section structure
       const defaultSections = {
@@ -177,21 +187,11 @@ router.post('/', verifyAdmin, async (req, res) => {
     }
     
     // Create assessment with all fields including sections
-    const assessmentData = {
-      id,
-      title,
-      description,
-      category,
-      duration: duration || '10-15 mins',
-      difficulty: difficulty || 'Intermediate',
-      featured: featured || false,
-      metadata: metadata || {},
-      whatIsDescription: whatIsDescription || '',
-      typicalCareers: typicalCareers || [],
-      whoShouldConsider: whoShouldConsider || [],
-      idealTraits: idealTraits || [],
-      assessmentOverview: assessmentOverview || { modules: [], resultsInclude: [] },
-      sections: sections || {
+    let sectionsData = sections;
+    
+    // If no sections provided, create default sections
+    if (!sectionsData) {
+      sectionsData = {
         introduction: {
           title: 'Introduction',
           description: 'Welcome to your career readiness assessment',
@@ -232,7 +232,24 @@ router.post('/', verifyAdmin, async (req, res) => {
           orderIndex: 5,
           questions: []
         }
-      }
+      };
+    }
+    
+    const assessmentData = {
+      id,
+      title,
+      description,
+      category,
+      duration: duration || '10-15 mins',
+      difficulty: difficulty || 'Intermediate',
+      featured: featured || false,
+      metadata: metadata || {},
+      whatIsDescription: whatIsDescription || '',
+      typicalCareers: typicalCareers || [],
+      whoShouldConsider: whoShouldConsider || [],
+      idealTraits: idealTraits || [],
+      assessmentOverview: assessmentOverview || { modules: [], resultsInclude: [] },
+      sections: new Map(Object.entries(sectionsData))
     };
 
     console.log('Creating assessment with data:', JSON.stringify(assessmentData, null, 2));
