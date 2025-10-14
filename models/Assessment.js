@@ -144,44 +144,21 @@ const assessmentSchema = new mongoose.Schema({
     modules: [String],
     resultsInclude: [String]
   },
-  // Assessment sections with unified structure - only the 5 required sections
+  // Dynamic assessment sections - supports any section structure
   sections: {
-    introduction: {
+    type: Map,
+    of: {
       title: {
         type: String,
-        default: 'Introduction'
+        required: true
       },
       description: {
         type: String,
-        default: 'Welcome to your career readiness assessment'
+        required: true
       },
       type: {
         type: String,
-        default: 'introduction'
-      },
-      weight: {
-        type: Number,
-        default: 0
-      },
-      orderIndex: {
-        type: Number,
-        default: 1
-      },
-      questions: [questionSchema],
-      scoringConfig: mongoose.Schema.Types.Mixed
-    },
-    psychometric: {
-      title: {
-        type: String,
-        default: 'Psychological Fit'
-      },
-      description: {
-        type: String,
-        default: 'Assess your personality compatibility with AI/ML careers'
-      },
-      type: {
-        type: String,
-        default: 'psychometric'
+        required: true
       },
       weight: {
         type: Number,
@@ -189,79 +166,7 @@ const assessmentSchema = new mongoose.Schema({
       },
       orderIndex: {
         type: Number,
-        default: 2
-      },
-      questions: [questionSchema],
-      scoringConfig: mongoose.Schema.Types.Mixed
-    },
-    technical: {
-      title: {
-        type: String,
-        default: 'Technical Aptitude'
-      },
-      description: {
-        type: String,
-        default: 'Evaluate your coding, math, and ML knowledge'
-      },
-      type: {
-        type: String,
-        default: 'technical'
-      },
-      weight: {
-        type: Number,
-        default: 30
-      },
-      orderIndex: {
-        type: Number,
-        default: 3
-      },
-      questions: [questionSchema],
-      scoringConfig: mongoose.Schema.Types.Mixed
-    },
-    wiscar: {
-      title: {
-        type: String,
-        default: 'FB6 Index Analysis'
-      },
-      description: {
-        type: String,
-        default: 'Comprehensive evaluation across 6 key dimensions'
-      },
-      type: {
-        type: String,
-        default: 'wiscar'
-      },
-      weight: {
-        type: Number,
-        default: 25
-      },
-      orderIndex: {
-        type: Number,
-        default: 4
-      },
-      questions: [questionSchema],
-      scoringConfig: mongoose.Schema.Types.Mixed
-    },
-    results: {
-      title: {
-        type: String,
-        default: 'Your Results'
-      },
-      description: {
-        type: String,
-        default: 'Review your assessment results and recommendations'
-      },
-      type: {
-        type: String,
-        default: 'results'
-      },
-      weight: {
-        type: Number,
-        default: 10
-      },
-      orderIndex: {
-        type: Number,
-        default: 5
+        required: true
       },
       questions: [questionSchema],
       scoringConfig: mongoose.Schema.Types.Mixed

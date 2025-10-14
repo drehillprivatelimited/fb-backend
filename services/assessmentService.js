@@ -101,41 +101,59 @@ class AssessmentService {
       // Convert embedded sections to array format for frontend compatibility
       const sections = [];
       if (assessment.sections) {
-        if (assessment.sections.psychometric) {
-          sections.push({
-            id: 'psychometric',
-            type: 'psychometric',
-            title: assessment.sections.psychometric.title,
-            description: assessment.sections.psychometric.description,
-            questions: processQuestions(assessment.sections.psychometric.questions),
-            weight: assessment.sections.psychometric.weight || 25,
-            orderIndex: 1,
-            scoringConfig: assessment.sections.psychometric.scoringConfig
-          });
-        }
-        if (assessment.sections.technical) {
-          sections.push({
-            id: 'technical',
-            type: 'technical',
-            title: assessment.sections.technical.title,
-            description: assessment.sections.technical.description,
-            questions: processQuestions(assessment.sections.technical.questions),
-            weight: assessment.sections.technical.weight || 30,
-            orderIndex: 2,
-            scoringConfig: assessment.sections.technical.scoringConfig
-          });
-        }
-        if (assessment.sections.wiscar) {
-          sections.push({
-            id: 'wiscar',
-            type: 'wiscar',
-            title: assessment.sections.wiscar.title,
-            description: assessment.sections.wiscar.description,
-            questions: processQuestions(assessment.sections.wiscar.questions),
-            weight: assessment.sections.wiscar.weight || 25,
-            orderIndex: 3,
-            scoringConfig: assessment.sections.wiscar.scoringConfig
-          });
+        // Handle both old hardcoded structure and new dynamic structure
+        if (assessment.sections instanceof Map) {
+          // New dynamic structure - convert Map to array
+          for (const [sectionKey, sectionData] of assessment.sections) {
+            sections.push({
+              id: sectionKey,
+              type: sectionData.type,
+              title: sectionData.title,
+              description: sectionData.description,
+              questions: processQuestions(sectionData.questions || []),
+              weight: sectionData.weight || 25,
+              orderIndex: sectionData.orderIndex || 1,
+              scoringConfig: sectionData.scoringConfig
+            });
+          }
+        } else {
+          // Old hardcoded structure - for backward compatibility
+          if (assessment.sections.psychometric) {
+            sections.push({
+              id: 'psychometric',
+              type: 'psychometric',
+              title: assessment.sections.psychometric.title,
+              description: assessment.sections.psychometric.description,
+              questions: processQuestions(assessment.sections.psychometric.questions),
+              weight: assessment.sections.psychometric.weight || 25,
+              orderIndex: 1,
+              scoringConfig: assessment.sections.psychometric.scoringConfig
+            });
+          }
+          if (assessment.sections.technical) {
+            sections.push({
+              id: 'technical',
+              type: 'technical',
+              title: assessment.sections.technical.title,
+              description: assessment.sections.technical.description,
+              questions: processQuestions(assessment.sections.technical.questions),
+              weight: assessment.sections.technical.weight || 30,
+              orderIndex: 2,
+              scoringConfig: assessment.sections.technical.scoringConfig
+            });
+          }
+          if (assessment.sections.wiscar) {
+            sections.push({
+              id: 'wiscar',
+              type: 'wiscar',
+              title: assessment.sections.wiscar.title,
+              description: assessment.sections.wiscar.description,
+              questions: processQuestions(assessment.sections.wiscar.questions),
+              weight: assessment.sections.wiscar.weight || 25,
+              orderIndex: 3,
+              scoringConfig: assessment.sections.wiscar.scoringConfig
+            });
+          }
         }
       }
 
