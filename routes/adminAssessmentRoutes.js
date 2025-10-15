@@ -546,12 +546,12 @@ router.post('/upload-gate-json', verifyAdmin, upload.single('gateJsonFile'), han
       return res.status(400).json({ message: validationError.message });
     }
 
-    // Create assessment data
-    const assessmentData = {
-      id: jsonData.id || `gate-${Date.now()}`,
-      title: jsonData.title,
-      description: jsonData.description,
-      category: jsonData.category || 'GATE',
+             // Create assessment data
+             const assessmentData = {
+               id: jsonData.id || `gate-${Date.now()}`,
+               title: jsonData.title,
+               description: jsonData.description,
+               category: 'GATE', // Force GATE category for all GATE assessments
       duration: jsonData.duration || '120 mins',
       difficulty: jsonData.difficulty || 'Advanced',
       assessmentType: 'gate',
