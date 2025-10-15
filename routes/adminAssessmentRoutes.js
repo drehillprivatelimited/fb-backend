@@ -1,7 +1,9 @@
 import Assessment from '../models/Assessment.js';
-
 import { verifyAdmin } from '../middleware/authMiddleware.js';
+import { upload, handleMulterError } from '../config/fileStorage.js';
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
 
@@ -475,5 +477,207 @@ router.delete('/:id/sections/:sectionId', verifyAdmin, async (req, res) => {
 
 
 
+
+// Upload JSON file for gate assessment (admin)
+router.post('/upload-gate-json', verifyAdmin, upload.single('gateJsonFile'), handleMulterError, async (req, res) => {
+  console.log('POST /api/admin/assessments/upload-gate-json - Uploading GATE JSON file');
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No JSON file uploaded' });
+    }
+
+    // Check if file is JSON
+    if (!req.file.originalname.endsWith('.json')) {
+      // Delete the uploaded file
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ message: 'Only JSON files are allowed' });
+    }
+
+    // Read and parse the JSON file
+    const jsonData = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
+    
+    // Validate the JSON structure for gate assessment
+    if (!jsonData.title || !jsonData.description || !jsonData.gateSections) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ 
+        message: 'Invalid JSON structure. Required fields: title, description, gateSections' 
+      });
+    }
+
+    // Validate gate sections structure
+    const { gateSections } = jsonData;
+    if (!gateSections.aptitude || !gateSections.core || !gateSections.results) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ 
+        message: 'Invalid gate sections structure. Required: aptitude, core, results' 
+      });
+    }
+
+    // Validate questions in each section
+    const validateQuestions = (questions, sectionName) => {
+      if (!Array.isArray(questions)) {
+        throw new Error(`${sectionName} questions must be an array`);
+      }
+      
+      questions.forEach((question, index) => {
+        if (!question.id || !question.text || !question.type) {
+          throw new Error(`${sectionName} question ${index + 1} missing required fields: id, text, type`);
+        }
+        
+        if (question.type === 'multiple-choice' && (!question.options || !Array.isArray(question.options))) {
+          throw new Error(`${sectionName} question ${index + 1} with type 'multiple-choice' must have options array`);
+        }
+      });
+    };
+
+    try {
+      validateQuestions(gateSections.aptitude.questions, 'Aptitude');
+      validateQuestions(gateSections.core.questions, 'Core');
+    } catch (validationError) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ message: validationError.message });
+    }
+
+    // Create assessment data
+    const assessmentData = {
+      id: jsonData.id || `gate-${Date.now()}`,
+      title: jsonData.title,
+      description: jsonData.description,
+      category: jsonData.category || 'GATE',
+      duration: jsonData.duration || '120 mins',
+      difficulty: jsonData.difficulty || 'Advanced',
+      assessmentType: 'gate',
+      isActive: true,
+      featured: jsonData.featured || false,
+      metadata: {
+        icon: 'book-open',
+        gradient: 'from-purple-500 to-purple-700',
+        userCount: '0',
+        tags: jsonData.tags || ['GATE', 'Engineering', 'Aptitude']
+      },
+      whatIsDescription: jsonData.whatIsDescription || 'GATE (Graduate Aptitude Test in Engineering) assessment',
+      typicalCareers: jsonData.typicalCareers || [
+        { title: 'Research Engineer', description: 'Advanced engineering research positions' },
+        { title: 'PhD Candidate', description: 'Pursue higher studies in engineering' }
+      ],
+      whoShouldConsider: jsonData.whoShouldConsider || [
+        'Engineering graduates',
+        'Students preparing for higher studies',
+        'Professionals seeking research opportunities'
+      ],
+      idealTraits: jsonData.idealTraits || [
+        'Strong analytical skills',
+        'Problem-solving ability',
+        'Mathematical aptitude',
+        'Technical knowledge'
+      ],
+      assessmentOverview: {
+        modules: ['Aptitude Assessment', 'Core Subject Assessment'],
+        resultsInclude: ['Aptitude Score', 'Core Score', 'Overall Performance', 'Recommendations']
+      },
+      gateSections: {
+        aptitude: {
+          title: gateSections.aptitude.title || 'Aptitude Assessment',
+          description: gateSections.aptitude.description || 'Test your general aptitude and problem-solving skills',
+          type: 'aptitude',
+          weight: 15,
+          orderIndex: 1,
+          questions: gateSections.aptitude.questions,
+          timeLimit: gateSections.aptitude.timeLimit || 30,
+          scoringConfig: gateSections.aptitude.scoringConfig || {
+            algorithm: 'simple',
+            thresholds: { excellent: 80, good: 60, needsImprovement: 40 }
+          }
+        },
+        core: {
+          title: gateSections.core.title || 'Core Subject Assessment',
+          description: gateSections.core.description || 'Evaluate your knowledge in core subjects',
+          type: 'core',
+          weight: 85,
+          orderIndex: 2,
+          questions: gateSections.core.questions,
+          timeLimit: gateSections.core.timeLimit || 90,
+          scoringConfig: gateSections.core.scoringConfig || {
+            algorithm: 'weighted',
+            thresholds: { excellent: 80, good: 60, needsImprovement: 40 }
+          }
+        },
+        results: {
+          title: gateSections.results.title || 'GATE Results',
+          description: gateSections.results.description || 'Your GATE assessment results and recommendations',
+          type: 'results',
+          weight: 0,
+          orderIndex: 3,
+          questions: gateSections.results.questions || [],
+          scoringConfig: gateSections.results.scoringConfig || {}
+        }
+      }
+    };
+
+    // Check if assessment with this ID already exists
+    const existingAssessment = await Assessment.findOne({ id: assessmentData.id });
+    if (existingAssessment) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ 
+        message: 'Assessment with this ID already exists' 
+      });
+    }
+
+    // Create and save the assessment
+    const assessment = new Assessment(assessmentData);
+    const validationError = assessment.validateSync();
+    
+    if (validationError) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        errors: Object.keys(validationError.errors).map(key => ({
+          field: key,
+          message: validationError.errors[key].message
+        }))
+      });
+    }
+
+    await assessment.save();
+    
+    // Clean up the uploaded file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Error deleting uploaded file:', err);
+    });
+
+    console.log('GATE assessment created successfully from JSON:', assessment.title);
+    res.status(201).json({
+      message: 'GATE assessment created successfully from JSON file',
+      assessment: assessment
+    });
+
+  } catch (error) {
+    console.error('Error processing GATE JSON upload:', error);
+    
+    // Clean up the uploaded file
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error processing JSON file', 
+      error: error.message 
+    });
+  }
+});
 
 export default router;

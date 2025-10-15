@@ -144,6 +144,12 @@ const assessmentSchema = new mongoose.Schema({
     modules: [String],
     resultsInclude: [String]
   },
+  // Assessment type to differentiate between regular and gate assessments
+  assessmentType: {
+    type: String,
+    enum: ['regular', 'gate'],
+    default: 'regular'
+  },
   // Assessment sections with unified structure - only the 5 required sections
   sections: {
     introduction: {
@@ -262,6 +268,81 @@ const assessmentSchema = new mongoose.Schema({
       orderIndex: {
         type: Number,
         default: 5
+      },
+      questions: [questionSchema],
+      scoringConfig: mongoose.Schema.Types.Mixed
+    }
+  },
+  // Gate assessment specific sections
+  gateSections: {
+    aptitude: {
+      title: {
+        type: String,
+        default: 'Aptitude Assessment'
+      },
+      description: {
+        type: String,
+        default: 'Test your general aptitude and problem-solving skills'
+      },
+      type: {
+        type: String,
+        default: 'aptitude'
+      },
+      weight: {
+        type: Number,
+        default: 15
+      },
+      orderIndex: {
+        type: Number,
+        default: 1
+      },
+      questions: [questionSchema],
+      scoringConfig: mongoose.Schema.Types.Mixed
+    },
+    core: {
+      title: {
+        type: String,
+        default: 'Core Subject Assessment'
+      },
+      description: {
+        type: String,
+        default: 'Evaluate your knowledge in core subjects'
+      },
+      type: {
+        type: String,
+        default: 'core'
+      },
+      weight: {
+        type: Number,
+        default: 85
+      },
+      orderIndex: {
+        type: Number,
+        default: 2
+      },
+      questions: [questionSchema],
+      scoringConfig: mongoose.Schema.Types.Mixed
+    },
+    results: {
+      title: {
+        type: String,
+        default: 'Gate Results'
+      },
+      description: {
+        type: String,
+        default: 'Your GATE assessment results and recommendations'
+      },
+      type: {
+        type: String,
+        default: 'results'
+      },
+      weight: {
+        type: Number,
+        default: 0
+      },
+      orderIndex: {
+        type: Number,
+        default: 3
       },
       questions: [questionSchema],
       scoringConfig: mongoose.Schema.Types.Mixed
