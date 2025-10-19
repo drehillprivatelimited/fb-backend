@@ -155,13 +155,15 @@ router.post('/', verifyAdmin, async (req, res) => {
       duration,
       difficulty,
       featured,
+      assessmentType,
       metadata,
       whatIsDescription,
       typicalCareers,
       whoShouldConsider,
       idealTraits,
       assessmentOverview,
-      sections
+      sections,
+      gateSections
     } = req.body;
     
     if (!id || !title || !description || !category) {
@@ -187,6 +189,7 @@ router.post('/', verifyAdmin, async (req, res) => {
       duration: duration || '10-15 mins',
       difficulty: difficulty || 'Intermediate',
       featured: featured || false,
+      assessmentType: assessmentType || 'regular',
       metadata: metadata || {},
       whatIsDescription: whatIsDescription || '',
       typicalCareers: typicalCareers || [],
@@ -234,7 +237,9 @@ router.post('/', verifyAdmin, async (req, res) => {
           orderIndex: 5,
           questions: []
         }
-      }
+      },
+      // Add gateSections for GATE assessments
+      ...(gateSections && { gateSections })
     };
 
     console.log('Creating assessment with data:', JSON.stringify(assessmentData, null, 2));

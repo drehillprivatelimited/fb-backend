@@ -71,6 +71,65 @@ const questionSchema = new mongoose.Schema({
   }
 });
 
+// Separate schema for GATE questions with correct answers
+const gateQuestionSchema = new mongoose.Schema({
+  id: {
+    type: String,
+    required: true
+  },
+  text: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ['multiple-choice', 'numerical', 'text'],
+    default: 'multiple-choice'
+  },
+  category: {
+    type: String,
+    required: true
+  },
+  options: [questionOptionSchema],
+  // GATE-specific fields
+  correctAnswer: {
+    type: String,
+    required: false
+  },
+  explanation: {
+    type: String,
+    required: false
+  },
+  subject: {
+    type: String,
+    required: false
+  },
+  difficulty: {
+    type: String,
+    required: false,
+    enum: ['Easy', 'Medium', 'Hard']
+  },
+  marks: {
+    type: Number,
+    required: false,
+    default: 1
+  },
+  required: {
+    type: Boolean,
+    default: true
+  },
+  weight: {
+    type: Number,
+    default: 1
+  },
+  orderIndex: {
+    type: Number,
+    required: false,
+    default: 1
+  }
+});
+
 const assessmentSchema = new mongoose.Schema({
   id: {
     type: String,
@@ -296,7 +355,7 @@ const assessmentSchema = new mongoose.Schema({
         type: Number,
         default: 1
       },
-      questions: [questionSchema],
+      questions: [gateQuestionSchema],
       scoringConfig: mongoose.Schema.Types.Mixed
     },
     core: {
@@ -320,7 +379,7 @@ const assessmentSchema = new mongoose.Schema({
         type: Number,
         default: 2
       },
-      questions: [questionSchema],
+      questions: [gateQuestionSchema],
       scoringConfig: mongoose.Schema.Types.Mixed
     },
     results: {
@@ -344,7 +403,7 @@ const assessmentSchema = new mongoose.Schema({
         type: Number,
         default: 3
       },
-      questions: [questionSchema],
+      questions: [gateQuestionSchema],
       scoringConfig: mongoose.Schema.Types.Mixed
     }
   },
