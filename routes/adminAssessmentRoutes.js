@@ -498,6 +498,9 @@ router.post('/upload-gate-json', verifyAdmin, upload.single('gateJsonFile'), han
     // Read and parse the JSON file
     const jsonData = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
     
+    // Get category from form data or JSON data
+    const category = req.body.category || jsonData.category || 'GATE';
+    
     // Validate the JSON structure for gate assessment
     if (!jsonData.title || !jsonData.description || !jsonData.gateSections) {
       fs.unlink(req.file.path, (err) => {
@@ -551,7 +554,7 @@ router.post('/upload-gate-json', verifyAdmin, upload.single('gateJsonFile'), han
                id: jsonData.id || `gate-${Date.now()}`,
                title: jsonData.title,
                description: jsonData.description,
-               category: 'GATE', // Force GATE category for all GATE assessments
+               category: category, // Use category from form data or JSON
       duration: jsonData.duration || '120 mins',
       difficulty: jsonData.difficulty || 'Advanced',
       assessmentType: 'gate',
